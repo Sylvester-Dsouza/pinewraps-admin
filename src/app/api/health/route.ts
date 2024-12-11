@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Check API health
-    const response = await axios.get(`${apiUrl}/api/health`);
+    const response = await axios.get(`${apiUrl}/api/api/health`);
     
     return NextResponse.json({
       success: true,
