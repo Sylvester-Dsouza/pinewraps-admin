@@ -1,10 +1,13 @@
 import axios from 'axios';
 import { auth } from '@/lib/firebase';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+if (!API_URL) {
+  throw new Error('NEXT_PUBLIC_API_URL environment variable is not set');
+}
 
 export const apiClient = axios.create({
-  baseURL: API_URL,
+  baseURL: `${API_URL}/api`,
   headers: {
     'Content-Type': 'application/json',
   },
