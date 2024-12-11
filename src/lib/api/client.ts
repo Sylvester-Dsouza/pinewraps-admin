@@ -1,10 +1,7 @@
 import axios from 'axios';
 import { auth } from '@/lib/firebase';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
-if (!API_URL) {
-  throw new Error('NEXT_PUBLIC_API_URL environment variable is not set');
-}
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://pinewraps-api.onrender.com';
 
 export const apiClient = axios.create({
   baseURL: `${API_URL}/api`,
@@ -19,27 +16,28 @@ apiClient.interceptors.request.use(
     try {
       const user = auth.currentUser;
       if (user) {
-        const token = await user.getIdToken(true);
+        const token = await user.getIdToken();
         config.headers.Authorization = `Bearer ${token}`;
       }
+      return config;
     } catch (error) {
-      console.error('Error getting Firebase token:', error);
+      console.error('Error getting auth token:', error);
+      return Promise.reject(error);
     }
-    return config;
   },
   (error) => {
     return Promise.reject(error);
   }
 );
 
-// Add response interceptor to handle errors
+// Add response interceptor for better error handling
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Handle unauthorized access
+    console.error('API Error:', error);
     if (error.response?.status === 401) {
-      // Don't redirect here since we're using Firebase auth
-      console.error('Unauthorized access:', error);
+      // Handle unauthorized error (e.g., redirect to login)
+      window.location.href = '/login';
     }
     return Promise.reject(error);
   }
