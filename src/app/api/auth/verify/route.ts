@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import api from '@/lib/api';
+import { auth } from '@/lib/firebase';
 
 // Use Node.js runtime instead of Edge
 export const runtime = 'nodejs';
@@ -31,6 +32,7 @@ export async function POST(req: NextRequest) {
     // Get token from Authorization header
     const authHeader = req.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
+      console.log('No token provided in request');
       return NextResponse.json(
         { success: false, error: { message: 'No token provided' } },
         { status: 401 }
@@ -38,33 +40,57 @@ export async function POST(req: NextRequest) {
     }
 
     const token = authHeader.split('Bearer ')[1];
+    console.log('Verifying token with API...');
 
-    // Forward the token to our backend
     try {
+      // Get the current Firebase user
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        console.log('No Firebase user found');
+        return NextResponse.json(
+          { success: false, error: { message: 'No user found' } },
+          { status: 401 }
+        );
+      }
+
+      // Forward the token to our backend for verification
       const response = await api.post('/api/admin-auth/verify', {}, {
         headers: {
           Authorization: `Bearer ${token}`
         }
       });
 
+      console.log('API verification successful');
       return NextResponse.json(response.data);
     } catch (error: any) {
       console.error('Backend verification error:', error.response?.data || error);
       
-      // If we have a specific error message from the backend, use it
-      if (error.response?.data?.error?.message) {
+      // Handle specific error cases
+      if (error.response?.status === 404) {
         return NextResponse.json(
-          error.response.data,
-          { status: error.response.status }
+          { 
+            success: false, 
+            error: { message: 'Admin verification endpoint not found' }
+          },
+          { status: 404 }
+        );
+      }
+      
+      if (error.response?.status === 401) {
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: { message: 'Invalid or expired token' }
+          },
+          { status: 401 }
         );
       }
 
-      // Otherwise return a generic error
       return NextResponse.json(
         {
           success: false,
           error: {
-            message: 'Failed to verify token'
+            message: error.response?.data?.error?.message || 'Failed to verify token'
           }
         },
         { status: error.response?.status || 500 }

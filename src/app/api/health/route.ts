@@ -14,7 +14,11 @@ export async function GET(req: NextRequest) {
     }
 
     // Check API health
-    const response = await axios.get(`${apiUrl}/api/api/health`);
+    const response = await axios.get(`${apiUrl}/api/health`, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
     
     return NextResponse.json({
       success: true,
