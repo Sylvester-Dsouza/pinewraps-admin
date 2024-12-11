@@ -50,7 +50,7 @@ export default function NewAdminPage() {
       const token = await currentUser.getIdToken();
 
       // Create admin through the API
-      await axios.post('http://localhost:3001/api/admin/users', {
+      await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/users`, {
         email: formData.email,
         password: formData.password,
         displayName: formData.displayName,

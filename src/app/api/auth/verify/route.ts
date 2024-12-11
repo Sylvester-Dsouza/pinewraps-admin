@@ -96,8 +96,16 @@ export async function GET(req: NextRequest) {
       );
     }
 
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+    if (!apiUrl) {
+      return NextResponse.json(
+        { error: 'API URL not configured' },
+        { status: 500 }
+      );
+    }
+
     // Forward the request to the backend
-    const response = await fetch('http://localhost:3001/api/admin-auth/verify', {
+    const response = await fetch(`${apiUrl}/api/admin-auth/verify`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
