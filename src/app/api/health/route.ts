@@ -1,15 +1,11 @@
 import { NextResponse } from 'next/server';
+import { apiClient } from '@/lib/api/client';
 
 export async function GET() {
   try {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://pinewraps-api.onrender.com';
-
-    // Check API health
-    const apiResponse = await fetch(`${apiUrl}/health`);
-    if (!apiResponse.ok) {
-      throw new Error('API health check failed');
-    }
-
+    // Use the API client which already has the correct base URL and CORS headers
+    const response = await apiClient.get('/health');
+    
     return NextResponse.json({
       status: 'healthy',
       api: 'connected',
