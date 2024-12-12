@@ -1,58 +1,95 @@
-'use client';
+"use client";
 
-import { ColumnDef } from '@tanstack/react-table';
-import { CellAction } from './cell-action';
-import { Badge } from '@/components/ui/badge';
+import { ColumnDef } from "@tanstack/react-table";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { MoreHorizontal, Pencil, Trash } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export type AdminColumn = {
   id: string;
   email: string;
   name: string;
-  adminAccess: string[];
-  isActive: boolean;
+  role: string;
   createdAt: string;
-  firebaseUid: string;
 };
 
 export const columns: ColumnDef<AdminColumn>[] = [
   {
-    accessorKey: 'email',
-    header: 'Email',
+    accessorKey: "email",
+    header: "Email",
   },
   {
-    accessorKey: 'name',
-    header: 'Name',
+    accessorKey: "name",
+    header: "Name",
   },
   {
-    accessorKey: 'adminAccess',
-    header: 'Access',
+    accessorKey: "role",
+    header: "Role",
     cell: ({ row }) => {
-      const access = row.original.adminAccess;
+      const role = row.getValue("role") as string;
       return (
-        <div className="flex flex-wrap gap-1">
-          {access.map((item) => (
-            <Badge key={item} variant="outline">
-              {item}
-            </Badge>
-          ))}
-        </div>
-      );
-    },
-  },
-  {
-    accessorKey: 'isActive',
-    header: 'Status',
-    cell: ({ row }) => {
-      const isActive = row.original.isActive;
-      return (
-        <Badge variant={isActive ? "success" : "destructive"}>
-          {isActive ? "Active" : "Inactive"}
+        <Badge
+          className={
+            role === "SUPER_ADMIN"
+              ? "bg-red-100 text-red-800"
+              : "bg-blue-100 text-blue-800"
+          }
+        >
+          {role.replace("_", " ")}
         </Badge>
       );
     },
   },
   {
-    id: 'actions',
-    cell: ({ row }) => <CellAction data={row.original} />,
+    accessorKey: "createdAt",
+    header: "Joined",
+    cell: ({ row }) => {
+      const date = new Date(row.getValue("createdAt"));
+      return date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+    },
+  },
+  {
+    id: "actions",
+    cell: ({ row }) => {
+      const admin = row.original;
+
+      return (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="h-8 w-8 p-0">
+              <span className="sr-only">Open menu</span>
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+            <DropdownMenuItem
+              onClick={() => navigator.clipboard.writeText(admin.id)}
+            >
+              Copy admin ID
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => window.location.href = `/admins/${admin.id}/edit`}>
+              <Pencil className="mr-2 h-4 w-4" />
+              Edit
+            </DropdownMenuItem>
+            <DropdownMenuItem className="text-red-600">
+              <Trash className="mr-2 h-4 w-4" />
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      );
+    },
   },
 ];

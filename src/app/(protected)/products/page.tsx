@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { createColumns } from '@/components/products/columns';
 import { Heading } from '@/components/ui/heading';
 import { Separator } from '@/components/ui/separator';
-import { AnalyticsCard } from '@/components/ui/analytics-card';
+import { AnalyticsCard, AnalyticsCardProps } from '@/components/ui/analytics-card';
 import DeleteDialog from '@/components/shared/DeleteDialog';
 import toast from 'react-hot-toast';
 import { getToken } from '@/lib/get-token';

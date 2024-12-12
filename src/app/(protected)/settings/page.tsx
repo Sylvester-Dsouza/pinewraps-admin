@@ -17,10 +17,12 @@ import {
 } from 'firebase/auth';
 import toast from 'react-hot-toast';
 import { Label } from '@/components/ui/label';
+import { useRouter } from 'next/navigation';
 
 export default function SettingsPage() {
   const auth = getAuth();
   const { user } = useAuth();
+  const router = useRouter();
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
@@ -147,9 +149,12 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="flex-1 space-y-4 p-8 pt-6">
-      <div className="flex items-center justify-between space-y-2">
-        <Heading title="Settings" description="Manage your account settings" />
+    <div className="flex-1 space-y-4">
+      <div className="flex items-center justify-between">
+        <Heading title="Settings" description="Manage your application settings" />
+        <div className="flex items-center gap-4">
+          <Button onClick={() => router.push('/settings/general')}>General Settings</Button>
+        </div>
       </div>
       <Separator />
       <div className="grid gap-4">

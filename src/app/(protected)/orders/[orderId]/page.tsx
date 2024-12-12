@@ -46,8 +46,8 @@ export type OrderStatus =
 
 export default function OrderDetailsPage() {
   const params = useParams();
-  const [order, setOrder] = useState<any>(null);
-  const [orderSnapshot, setOrderSnapshot] = useState<any>(null);
+  const [order, setOrder] = useState<Order | null>(null);
+  const [orderSnapshot, setOrderSnapshot] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedStatus, setSelectedStatus] = useState<OrderStatus>('PENDING');
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
@@ -57,12 +57,16 @@ export default function OrderDetailsPage() {
   const fetchOrder = async () => {
     try {
       setLoading(true);
+      if (!params.orderId) {
+        throw new Error('Order ID is required');
+      }
+
       const orderResponse = await orderService.getOrder(params.orderId as string);
       
       if (orderResponse) {
         console.log('Order Response:', JSON.stringify(orderResponse, null, 2)); // Debug log
         setOrder(orderResponse);
-        setSelectedStatus(orderResponse.status);
+        setSelectedStatus(orderResponse.status as OrderStatus);
       }
 
       try {
@@ -225,29 +229,15 @@ export default function OrderDetailsPage() {
     return items.map((item, index) => (
       <div key={index} className="flex items-start justify-between py-4 border-b last:border-0">
         <div className="flex items-start space-x-4">
-          {item.product?.images?.[0] ? (
-            <div className="relative h-24 w-24 rounded-lg overflow-hidden bg-gray-100">
-              <Image
-                src={item.product.images[0]}
-                alt={item.name}
-                fill
-                className="object-cover"
-              />
-            </div>
-          ) : (
-            <div className="flex items-center justify-center h-24 w-24 rounded-lg bg-gray-100">
-              <ShoppingCart className="h-8 w-8 text-gray-400" />
-            </div>
-          )}
+          <div className="flex items-center justify-center h-24 w-24 rounded-lg bg-gray-100">
+            <ShoppingCart className="h-8 w-8 text-gray-400" />
+          </div>
           <div className="flex-1">
             <div className="flex items-start justify-between">
               <div>
                 <h3 className="font-medium text-gray-900">{item.name}</h3>
                 {item.variant && (
                   <p className="text-sm text-gray-500 whitespace-pre-line">{formatVariant(item.variant)}</p>
-                )}
-                {item.product?.sku && (
-                  <p className="text-sm text-gray-500">SKU: {item.product.sku}</p>
                 )}
                 {item.cakeWriting && (
                   <div className="mt-1 p-2 bg-gray-50 rounded-md">
@@ -341,7 +331,7 @@ export default function OrderDetailsPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Top Bar */}
-      <div className="bg-white border-b px-8 py-4">
+      <div className="bg-white border-b py-4">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
           <div className="flex items-center space-x-4">
             <Link href="/orders">
@@ -681,7 +671,11 @@ export default function OrderDetailsPage() {
                   <div className="flex items-start gap-3">
                     <User className="h-5 w-5 text-gray-500 mt-0.5" />
                     <div>
-                      <p className="text-sm font-medium">{order?.customer?.name}</p>
+                      <p className="text-sm font-medium">
+                        {order?.customer?.firstName && order?.customer?.lastName 
+                          ? `${order.customer.firstName} ${order.customer.lastName}`
+                          : order?.customer?.name || 'Guest Customer'}
+                      </p>
                       <p className="text-xs text-gray-500">Customer Name</p>
                     </div>
                   </div>
@@ -689,7 +683,7 @@ export default function OrderDetailsPage() {
                   <div className="flex items-start gap-3">
                     <Mail className="h-5 w-5 text-gray-500 mt-0.5" />
                     <div>
-                      <p className="text-sm font-medium">{order?.customer?.email}</p>
+                      <p className="text-sm font-medium">{order?.customer?.email || 'No email provided'}</p>
                       <p className="text-xs text-gray-500">Email Address</p>
                     </div>
                   </div>
@@ -697,7 +691,7 @@ export default function OrderDetailsPage() {
                   <div className="flex items-start gap-3">
                     <Phone className="h-5 w-5 text-gray-500 mt-0.5" />
                     <div>
-                      <p className="text-sm font-medium">{order?.customer?.phone}</p>
+                      <p className="text-sm font-medium">{order?.customerPhone || order?.customer?.phone || 'No phone provided'}</p>
                       <p className="text-xs text-gray-500">Phone Number</p>
                     </div>
                   </div>

@@ -11,8 +11,11 @@ import toast from 'react-hot-toast'
 import axios from 'axios'
 import { CustomerReward } from "@/types/reward"
 import { getAuth } from 'firebase/auth'
+import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
 
 export default function RewardsPage() {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [rewards, setRewards] = useState<CustomerReward[]>([]);
   const [analytics, setAnalytics] = useState({
@@ -65,75 +68,78 @@ export default function RewardsPage() {
   }, []);
 
   return (
-    <div className="flex-col">
-      <div className="flex-1 space-y-4 p-8 pt-6">
-        <Heading title="Customer Rewards" description="View customer reward points and history" />
-        <Separator />
-        <div className="grid gap-4 grid-cols-1 md:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Total Points Issued
-              </CardTitle>
-              <Award className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {analytics.totalPoints.toLocaleString()} pts
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Total Customers
-              </CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {analytics.totalCustomers.toLocaleString()}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Average Points
-              </CardTitle>
-              <Gift className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {analytics.averagePoints.toLocaleString()} pts
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Active Customers
-              </CardTitle>
-              <Coins className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {analytics.activeCustomers.toLocaleString()}
-              </div>
-            </CardContent>
-          </Card>
+    <div className="flex-1 space-y-4">
+      <div className="flex items-center justify-between">
+        <Heading title="Rewards" description="Manage your reward programs" />
+        <div className="flex items-center gap-4">
+          <Button onClick={() => router.push('/rewards/new')}>Create Reward</Button>
         </div>
-
-        <DataTable 
-          columns={columns} 
-          data={rewards} 
-          searchKey="customer.name"
-          loading={loading}
-        />
       </div>
+      <Separator />
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Total Points Issued
+            </CardTitle>
+            <Award className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {analytics.totalPoints.toLocaleString()} pts
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Total Customers
+            </CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {analytics.totalCustomers.toLocaleString()}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Average Points
+            </CardTitle>
+            <Gift className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {analytics.averagePoints.toLocaleString()} pts
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Active Customers
+            </CardTitle>
+            <Coins className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {analytics.activeCustomers.toLocaleString()}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <DataTable 
+        columns={columns} 
+        data={rewards} 
+        searchKey="customer.name"
+        loading={loading}
+      />
     </div>
   );
 }

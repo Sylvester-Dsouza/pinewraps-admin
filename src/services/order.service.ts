@@ -99,19 +99,23 @@ export const orderService = {
       const response = await api.get<{ success: boolean; data: OrderAnalytics }>('/api/orders/analytics');
       return response.data;
     } catch (error: any) {
-      console.error('Error fetching order analytics:', error);
-      throw new Error(error.response?.data?.message || 'Failed to fetch order analytics');
+      console.error('Error fetching analytics:', error);
+      throw new Error(error.response?.data?.message || 'Failed to fetch analytics');
     }
   },
 
   // Get single order details
-  getOrder(orderId: string) {
-    return api.get(`/api/orders/${orderId}`).then(response => {
-      if (!response.data?.success) {
+  getOrder: async (orderId: string) => {
+    try {
+      const response = await api.get<{ success: boolean; data: Order }>(`/api/orders/${orderId}`);
+      if (!response.data.success) {
         throw new Error(response.data?.error?.message || 'Failed to fetch order');
       }
       return response.data.data;
-    });
+    } catch (error: any) {
+      console.error('Error fetching order:', error);
+      throw new Error(error.response?.data?.error?.message || 'Failed to fetch order');
+    }
   },
 
   // Update order status
@@ -128,7 +132,7 @@ export const orderService = {
   // Update admin notes
   updateAdminNotes: async (orderId: string, adminNotes: string) => {
     try {
-      const response = await api.put<{ success: boolean }>(`/api/orders/${orderId}/notes`, { adminNotes });
+      const response = await api.patch(`/api/orders/${orderId}/notes`, { adminNotes });
       return response.data;
     } catch (error: any) {
       console.error('Error updating admin notes:', error);
@@ -139,7 +143,7 @@ export const orderService = {
   // Send email to customer
   sendEmail: async (orderId: string, subject: string, body: string) => {
     try {
-      const response = await api.post<{ success: boolean }>(`/api/orders/${orderId}/email`, { subject, body });
+      const response = await api.post(`/api/orders/${orderId}/email`, { subject, body });
       return response.data;
     } catch (error: any) {
       console.error('Error sending email:', error);
@@ -148,17 +152,19 @@ export const orderService = {
   },
 
   // Export orders
-  exportOrders() {
-    return api.get('/api/orders/export');
+  exportOrders: async () => {
+    const response = await api.get('/api/orders/export', { responseType: 'blob' });
+    return response.data;
   },
 
   // Get order snapshot
-  getOrderSnapshot(orderId: string) {
-    return api.get(`/api/orders/${orderId}/snapshot`).then(response => {
-      if (!response.data?.success) {
-        throw new Error(response.data?.error?.message || 'Failed to fetch order snapshot');
-      }
+  getOrderSnapshot: async (orderId: string) => {
+    try {
+      const response = await api.get(`/api/orders/${orderId}/snapshot`);
       return response.data.data;
-    });
+    } catch (error: any) {
+      console.error('Error fetching order snapshot:', error);
+      throw new Error(error.response?.data?.message || 'Failed to fetch order snapshot');
+    }
   }
 };

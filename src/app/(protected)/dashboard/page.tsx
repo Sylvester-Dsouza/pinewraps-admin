@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Heading } from '@/components/ui/heading';
 import { Separator } from '@/components/ui/separator';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { AnalyticsCard } from '@/components/ui/analytics-card';
 import { ShoppingBag, Users, DollarSign, TrendingUp, RefreshCw } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
@@ -85,7 +85,7 @@ export default function Page() {
   };
 
   return (
-    <div className="flex-1 space-y-4 p-8 pt-6">
+    <div className="flex-1 space-y-4">
       <div className="flex items-center justify-between">
         <Heading title="Dashboard" description="Welcome to your dashboard" />
         <div className="flex items-center gap-4">
@@ -113,78 +113,31 @@ export default function Page() {
       </div>
       <Separator />
       <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
-            <ShoppingBag className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <Skeleton className="h-8 w-[100px]" />
-            ) : (
-              <>
-                <div className="text-2xl font-bold">{analytics?.totalOrders || 0}</div>
-                <p className="text-xs text-muted-foreground">Orders in period</p>
-              </>
-            )}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Customers</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <Skeleton className="h-8 w-[100px]" />
-            ) : (
-              <>
-                <div className="text-2xl font-bold">{analytics?.totalCustomers || 0}</div>
-                <p className="text-xs text-muted-foreground">Active customers</p>
-              </>
-            )}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <Skeleton className="h-8 w-[100px]" />
-            ) : (
-              <>
-                <div className="text-2xl font-bold">
-                  {formatCurrency(analytics?.totalRevenue || 0)}
-                </div>
-                <p className="text-xs text-muted-foreground">Revenue in period</p>
-              </>
-            )}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Growth Rate</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <Skeleton className="h-8 w-[100px]" />
-            ) : (
-              <>
-                <div className="text-2xl font-bold">
-                  {typeof analytics?.growthRate === 'number' ? (
-                    `${analytics.growthRate >= 0 ? '+' : ''}${analytics.growthRate.toFixed(1)}%`
-                  ) : (
-                    '0%'
-                  )}
-                </div>
-                <p className="text-xs text-muted-foreground">Compared to previous period</p>
-              </>
-            )}
-          </CardContent>
-        </Card>
+        <AnalyticsCard
+          title="Total Orders"
+          value={analytics?.totalOrders || 0}
+          icon={ShoppingBag}
+        />
+        <AnalyticsCard
+          title="Total Customers"
+          value={analytics?.totalCustomers || 0}
+          icon={Users}
+        />
+        <AnalyticsCard
+          title="Total Revenue"
+          value={analytics?.totalRevenue || 0}
+          icon={DollarSign}
+          isCurrency
+        />
+        <AnalyticsCard
+          title="Growth Rate"
+          value={typeof analytics?.growthRate === 'number' ? analytics.growthRate : 0}
+          icon={TrendingUp}
+          trend={typeof analytics?.growthRate === 'number' ? {
+            value: Math.abs(analytics.growthRate),
+            isPositive: analytics.growthRate >= 0
+          } : undefined}
+        />
       </div>
     </div>
   );
