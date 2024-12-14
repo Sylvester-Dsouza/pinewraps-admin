@@ -14,8 +14,8 @@ export function formatDate(date: string | Date) {
 }
 
 export function formatPrice(price: number) {
-  return new Intl.NumberFormat('en-US', {
+  return new Intl.NumberFormat('en-AE', {
     style: 'currency',
-    currency: 'USD'
+    currency: 'AED'
   }).format(price)
 }

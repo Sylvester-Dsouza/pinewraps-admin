@@ -32,7 +32,7 @@ const CouponsPage = () => {
       <Separator />
       <DataTable
         columns={columns}
-        data={coupons}
+        data={coupons || []}
         loading={loading}
         searchKey="code"
       />

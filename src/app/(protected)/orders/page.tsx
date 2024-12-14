@@ -258,15 +258,21 @@ export default function OrdersPage() {
         </div>
       </div>
 
-      <DataTable
-        columns={columns}
-        data={orders}
+      <DataTable 
+        columns={columns} 
+        data={orders} 
         loading={loading}
         pagination={{
           page,
           pageSize: limit,
           total,
           onPageChange: setPage,
+        }}
+        meta={{
+          refreshData: () => {
+            fetchOrders(true);
+            fetchAnalytics();
+          }
         }}
       />
     </div>

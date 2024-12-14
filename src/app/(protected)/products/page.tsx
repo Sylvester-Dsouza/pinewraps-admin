@@ -35,6 +35,7 @@ export default function ProductsPage() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -123,7 +124,8 @@ export default function ProductsPage() {
       const data = await response.json();
       if (data.success) {
         setProducts(data.data.products);
-        setTotalPages(data.data.totalPages);
+        setTotalPages(data.data.pagination.totalPages);
+        setTotalItems(data.data.pagination.total);
       }
     } catch (error: any) {
       console.error('Error fetching products:', error);
@@ -248,29 +250,35 @@ export default function ProductsPage() {
 
       <div className="bg-white p-4 rounded-lg shadow">
         <div className="flex items-center gap-4 mb-4">
-          <Select
-            value={statusFilter}
-            onValueChange={(value) => setStatusFilter(value)}
-          >
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Filter by status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="draft">Draft</SelectItem>
-            </SelectContent>
-          </Select>
+          <DataTable
+            columns={columns}
+            data={products}
+            searchKey="name"
+            searchPlaceholder="Search products..."
+            filterComponent={
+              <Select
+                value={statusFilter}
+                onValueChange={(value) => setStatusFilter(value)}
+              >
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="draft">Draft</SelectItem>
+                </SelectContent>
+              </Select>
+            }
+            loading={loading}
+            pagination={{
+              page,
+              pageSize: 10,
+              total: totalItems,
+              onPageChange: setPage,
+            }}
+          />
         </div>
-
-        <DataTable
-          columns={columns}
-          data={products}
-          loading={loading}
-          page={page}
-          totalPages={totalPages}
-          onPageChange={setPage}
-        />
       </div>
 
       <DeleteDialog

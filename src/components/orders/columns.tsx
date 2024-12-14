@@ -3,10 +3,22 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Eye } from "lucide-react";
+import { Eye, Trash2 } from "lucide-react";
 import Link from "next/link";
-import { Order } from "@/services/order.service";
+import { Order, orderService } from "@/services/order.service";
 import { format, parseISO } from "date-fns";
+import { useToast } from "@/components/ui/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const formatDate = (dateString: string | Date | null) => {
   if (!dateString) return 'N/A';
@@ -113,14 +125,56 @@ export const columns: ColumnDef<Order>[] = [
   },
   {
     id: "actions",
-    cell: ({ row }) => {
+    cell: ({ row, table }) => {
+      const order = row.original;
+      const { toast } = useToast();
+
+      const handleDelete = async () => {
+        try {
+          await orderService.deleteOrder(order.id);
+          toast({
+            title: "Success",
+            description: "Order deleted successfully",
+          });
+          // Refresh the table data
+          table.options.meta?.refreshData();
+        } catch (error: any) {
+          toast({
+            title: "Error",
+            description: error.message || "Failed to delete order",
+            variant: "destructive",
+          });
+        }
+      };
+
       return (
-        <div className="text-right">
-          <Link href={`/orders/${row.original.id}`}>
+        <div className="flex justify-end gap-2">
+          <Link href={`/orders/${order.id}`}>
             <Button variant="ghost" size="icon">
               <Eye className="h-4 w-4" />
             </Button>
           </Link>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <Trash2 className="h-4 w-4 text-red-500" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Order</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to delete order #{order.orderNumber}? This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDelete} className="bg-red-500 hover:bg-red-600">
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       );
     },

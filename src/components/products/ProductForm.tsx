@@ -97,15 +97,13 @@ export default function ProductForm({
 
   const [images, setImages] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<Array<{ id: string; url: string }>>([]);
-  const [showVariants, setShowVariants] = useState(initialData?.variations?.length > 0 || false);
-  const [editingVariants, setEditingVariants] = useState(initialData?.variations?.length > 0 || false);
+  const [showVariants, setShowVariants] = useState(false);
+  const [editingVariants, setEditingVariants] = useState(false);
   const [variantCombinations, setVariantCombinations] = useState<VariantCombination[]>([]);
-  const [variants, setVariants] = useState<ProductVariant[]>(
-    initialData?.variations || [
-      { type: VariationType.SIZE, options: [] },
-      { type: VariationType.FLAVOUR, options: [] }
-    ]
-  );
+  const [variants, setVariants] = useState<ProductVariant[]>([
+    { type: VariationType.SIZE, options: [] },
+    { type: VariationType.FLAVOUR, options: [] }
+  ]);
 
   // Create form with proper type checking
   const form = useForm<ProductFormValues>({
@@ -137,13 +135,12 @@ export default function ProductForm({
     }
   }, [initialData?.images]);
 
-  // Initialize variants from initialData
+  // Initialize variants from initialData if they exist
   useEffect(() => {
-    if (initialData?.variations) {
-      console.log('Setting variants from initialData:', initialData.variations);
+    if (initialData?.variations && initialData.variations.length > 0) {
       setVariants(initialData.variations);
       setShowVariants(true);
-      setEditingVariants(false);
+      setEditingVariants(true);
 
       // Generate combinations
       const sizes = initialData.variations.find(v => v.type === VariationType.SIZE)?.options || [];
@@ -154,12 +151,10 @@ export default function ProductForm({
         if (size.value.trim()) {
           flavours.forEach(flavour => {
             if (flavour.value.trim()) {
-              // Find combination price if it exists in initialData
               const existingCombination = initialData.combinations?.find(
                 c => c.size === size.value && c.flavour === flavour.value
               );
 
-              // Use existing combination price if available, otherwise calculate from base price and adjustments
               const price = existingCombination?.price !== undefined 
                 ? existingCombination.price
                 : (initialData.basePrice || 0) + Number(size.priceAdjustment || 0) + Number(flavour.priceAdjustment || 0);
@@ -174,7 +169,6 @@ export default function ProductForm({
         }
       });
       
-      console.log('Generated combinations:', combinations);
       setVariantCombinations(combinations);
     }
   }, [initialData?.variations]);
@@ -472,6 +466,13 @@ const removeImage = (id: string) => {
   };
   const statusOptions = PRODUCT_STATUSES;
 
+  const handleToggleVariants = () => {
+    setShowVariants(!showVariants);
+    if (!showVariants) {
+      setEditingVariants(true);
+    }
+  };
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
@@ -540,16 +541,21 @@ const removeImage = (id: string) => {
                       name="basePrice"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-gray-700 font-medium">Base Price</FormLabel>
+                          <FormLabel className="text-gray-700 font-medium flex items-center gap-2">
+                            Base Price
+                            <span className="text-xs text-gray-500 font-normal">(Used when no variations are set)</span>
+                          </FormLabel>
                           <FormControl>
                             <div className="relative">
                               <span className="absolute left-3 top-2.5 text-gray-500">
+                                <DollarSign className="h-5 w-5" />
                               </span>
                               <Input
                                 type="number"
                                 min={0}
                                 step={1}
                                 placeholder="Enter base price"
+                                className="pl-10"
                                 {...field}
                                 onChange={e => {
                                   const value = e.target.value;
@@ -559,6 +565,9 @@ const removeImage = (id: string) => {
                             </div>
                           </FormControl>
                           <FormMessage />
+                          <p className="text-xs text-gray-500 mt-1">
+                            Note: This price will only be used if no variations are set. For products with variations, set prices in the variants section.
+                          </p>
                         </FormItem>
                       )}
                     />
@@ -667,12 +676,7 @@ const removeImage = (id: string) => {
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={() => {
-                        setShowVariants(!showVariants);
-                        if (!showVariants) {
-                          setEditingVariants(true);
-                        }
-                      }}
+                      onClick={handleToggleVariants}
                     >
                       {showVariants ? 'Hide Variants' : 'Add Variants'}
                     </Button>
@@ -701,13 +705,27 @@ const removeImage = (id: string) => {
                       <div className="space-y-2 bg-gray-50/50 p-4 rounded-lg">
                         {variants.find(v => v.type === VariationType.SIZE)?.options.map((option, index) => (
                           <div key={index} className="flex items-center gap-2 bg-white p-2 rounded border group">
-                            <Input
-                              placeholder="Enter size (e.g., Small, Medium, Large)"
-                              value={option.value}
-                              onChange={(e) => updateVariantOption(VariationType.SIZE, index, 'value', e.target.value)}
-                              disabled={!editingVariants}
-                              className="flex-1"
-                            />
+                            <div className="flex-1 grid grid-cols-2 gap-2">
+                              <Input
+                                placeholder="Enter size (e.g., Small, Medium, Large)"
+                                value={option.value}
+                                onChange={(e) => updateVariantOption(VariationType.SIZE, index, 'value', e.target.value)}
+                                disabled={!editingVariants}
+                              />
+                              <div className="relative">
+                                <Input
+                                  type="number"
+                                  placeholder="Price"
+                                  value={option.priceAdjustment}
+                                  onChange={(e) => updateVariantOption(VariationType.SIZE, index, 'priceAdjustment', e.target.value)}
+                                  disabled={!editingVariants}
+                                  min="0"
+                                  step="1"
+                                  className="pl-16"
+                                />
+                                <span className="absolute left-3 top-2 text-gray-500 text-sm">Price:</span>
+                              </div>
+                            </div>
                             {editingVariants && (
                               <Button
                                 type="button"
@@ -746,13 +764,27 @@ const removeImage = (id: string) => {
                       <div className="space-y-2 bg-gray-50/50 p-4 rounded-lg">
                         {variants.find(v => v.type === VariationType.FLAVOUR)?.options.map((option, index) => (
                           <div key={index} className="flex items-center gap-2 bg-white p-2 rounded border group">
-                            <Input
-                              placeholder="Enter flavour"
-                              value={option.value}
-                              onChange={(e) => updateVariantOption(VariationType.FLAVOUR, index, 'value', e.target.value)}
-                              disabled={!editingVariants}
-                              className="flex-1"
-                            />
+                            <div className="flex-1 grid grid-cols-2 gap-2">
+                              <Input
+                                placeholder="Enter flavour"
+                                value={option.value}
+                                onChange={(e) => updateVariantOption(VariationType.FLAVOUR, index, 'value', e.target.value)}
+                                disabled={!editingVariants}
+                              />
+                              <div className="relative">
+                                <Input
+                                  type="number"
+                                  placeholder="Price"
+                                  value={option.priceAdjustment}
+                                  onChange={(e) => updateVariantOption(VariationType.FLAVOUR, index, 'priceAdjustment', e.target.value)}
+                                  disabled={!editingVariants}
+                                  min="0"
+                                  step="1"
+                                  className="pl-16"
+                                />
+                                <span className="absolute left-3 top-2 text-gray-500 text-sm">Price:</span>
+                              </div>
+                            </div>
                             {editingVariants && (
                               <Button
                                 type="button"

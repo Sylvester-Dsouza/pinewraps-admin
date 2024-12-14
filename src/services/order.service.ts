@@ -166,5 +166,16 @@ export const orderService = {
       console.error('Error fetching order snapshot:', error);
       throw new Error(error.response?.data?.message || 'Failed to fetch order snapshot');
     }
+  },
+
+  // Delete order
+  deleteOrder: async (orderId: string) => {
+    try {
+      const response = await api.delete(`/api/orders/${orderId}`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error deleting order:', error);
+      throw new Error(error.response?.data?.message || 'Failed to delete order');
+    }
   }
 };
