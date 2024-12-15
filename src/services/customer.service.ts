@@ -40,7 +40,8 @@ export interface Reward {
 export interface Customer {
   id: string;
   email: string;
-  name: string | null;
+  firstName: string | null;
+  lastName: string | null;
   phone: string | null;
   birthDate: string | null;
   createdAt: string;
@@ -68,6 +69,23 @@ export interface CustomerResponse {
   data: Customer;
 }
 
+export interface RewardResponse {
+  success: boolean;
+  data: {
+    points: number;
+    totalPoints: number;
+    tier: 'BRONZE' | 'SILVER' | 'GOLD' | 'PLATINUM';
+    history: RewardHistory[];
+  };
+}
+
+export interface RewardHistoryResponse {
+  success: boolean;
+  data: {
+    history: RewardHistory[];
+  };
+}
+
 export const customerService = {
   getCustomers: async (page = 1, limit = 10, search?: string): Promise<CustomersResponse> => {
     try {
@@ -80,6 +98,7 @@ export const customerService = {
       }
 
       const response = await api.get(`/api/customers?${params.toString()}`);
+      console.log('API Response:', response.data); // Debug log
       return response.data;
     } catch (error: any) {
       if (error.response?.status === 401) {
@@ -130,5 +149,25 @@ export const customerService = {
       }
       throw error;
     }
-  }
+  },
+
+  getCustomerReward: async (customerId: string): Promise<RewardResponse> => {
+    try {
+      const response = await api.get(`/api/rewards/${customerId}`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error fetching reward:', error);
+      throw error;
+    }
+  },
+
+  getCustomerRewardHistory: async (customerId: string): Promise<RewardHistoryResponse> => {
+    try {
+      const response = await api.get(`/api/rewards/${customerId}/history`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error fetching reward history:', error);
+      throw error;
+    }
+  },
 };

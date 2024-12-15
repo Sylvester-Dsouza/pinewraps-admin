@@ -37,6 +37,7 @@ export interface CreateCouponDTO {
   startDate: string;
   endDate?: string;
   usageLimit?: number;
+  status?: CouponStatus;
 }
 
 export interface APIResponse<T> {
@@ -46,24 +47,24 @@ export interface APIResponse<T> {
 }
 
 export const getCoupons = async () => {
-  const response = await apiClient.get<APIResponse<Coupon[]>>("/api/coupons");
+  const response = await apiClient.get<APIResponse<Coupon[]>>("/coupons");
   return response.data.data;
 };
 
 export const getCoupon = async (id: string) => {
-  const response = await apiClient.get<APIResponse<Coupon>>(`/api/coupons/${id}`);
+  const response = await apiClient.get<APIResponse<Coupon>>(`/coupons/${id}`);
   return response.data.data;
 };
 
 export const createCoupon = async (data: CreateCouponDTO) => {
-  const response = await apiClient.post<APIResponse<Coupon>>("/api/coupons", data);
+  const response = await apiClient.post<APIResponse<Coupon>>("/coupons", data);
   return response.data.data;
 };
 
 export const updateCoupon = async (id: string, data: Partial<CreateCouponDTO>) => {
   console.log('Making API request to update coupon:', { id, data });
   try {
-    const response = await apiClient.put<APIResponse<Coupon>>(`/api/coupons/${id}`, data);
+    const response = await apiClient.put<APIResponse<Coupon>>(`/coupons/${id}`, data);
     console.log('Update coupon response:', response.data);
     return response.data.data;
   } catch (error) {
@@ -73,6 +74,6 @@ export const updateCoupon = async (id: string, data: Partial<CreateCouponDTO>) =
 };
 
 export const deleteCoupon = async (id: string) => {
-  const response = await apiClient.delete<APIResponse<void>>(`/api/coupons/${id}`);
+  const response = await apiClient.delete<APIResponse<void>>(`/coupons/${id}`);
   return response.data;
 };

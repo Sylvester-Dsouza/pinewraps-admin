@@ -8,8 +8,8 @@ import { Separator } from '@/components/ui/separator';
 import { DataTable } from '@/components/ui/data-table';
 import { Plus } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import { getAuth } from 'firebase/auth';
 import { columns, type AdminColumn } from './columns';
+import { adminService } from '@/services/admin.service';
 
 export default function AdminsPage() {
   const router = useRouter();
@@ -23,35 +23,31 @@ export default function AdminsPage() {
   const fetchAdmins = async () => {
     try {
       setLoading(true);
-      const auth = getAuth();
-      const token = await auth.currentUser?.getIdToken();
+      const response = await adminService.getAdmins();
       
-      if (!token) {
-        toast.error('Authentication required');
-        router.push('/login');
-        return;
-      }
-
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admins`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch administrators');
-      }
-
-      const data = await response.json();
-      if (data.success) {
-        setAdmins(data.data);
+      if (response.success) {
+        setAdmins(response.data.map(admin => ({
+          id: admin.id,
+          email: admin.email,
+          name: admin.name,
+          role: admin.role,
+          createdAt: admin.createdAt
+        })));
       }
     } catch (error: any) {
       console.error('Error fetching admins:', error);
-      toast.error(error.message || 'Failed to load administrators');
+      // Error is already handled by the service
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDelete = async (adminId: string) => {
+    try {
+      await adminService.deleteAdmin(adminId);
+      fetchAdmins(); // Refresh the list after deletion
+    } catch (error) {
+      // Error is already handled by the service
     }
   };
 
@@ -72,6 +68,7 @@ export default function AdminsPage() {
         data={admins}
         searchKey="email"
         loading={loading}
+        deleteRow={handleDelete}
       />
     </div>
   );

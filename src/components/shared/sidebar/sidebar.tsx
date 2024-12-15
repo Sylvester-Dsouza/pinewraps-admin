@@ -56,7 +56,7 @@ export default function Sidebar() {
           }}
           className="flex items-center gap-2 cursor-pointer"
         >
-          <span className="text-lg font-semibold text-gray-900">Pinewraps</span>
+          <span className="text-lg font-semibold text-gray-900">Pinewraps Admin</span>
         </div>
       </div>
 

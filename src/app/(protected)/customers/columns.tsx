@@ -3,7 +3,7 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal } from "lucide-react";
+import { MoreHorizontal, Eye, ShoppingBag } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,12 +11,28 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Customer } from "@/services/customer.service";
+import { useRouter } from "next/navigation";
 
 export const columns: ColumnDef<Customer>[] = [
   {
     accessorKey: "name",
     header: "Name",
-    cell: ({ row }) => row.original.name || "-",
+    cell: ({ row }) => {
+      const firstName = row.original.firstName || '';
+      const lastName = row.original.lastName || '';
+      const fullName = firstName || lastName ? `${firstName} ${lastName}`.trim() : '-';
+      const router = useRouter();
+      
+      return (
+        <Button 
+          variant="link" 
+          className="p-0 h-auto font-normal"
+          onClick={() => router.push(`/customers/${row.original.id}`)}
+        >
+          {fullName}
+        </Button>
+      );
+    },
   },
   {
     accessorKey: "email",
@@ -36,7 +52,7 @@ export const columns: ColumnDef<Customer>[] = [
     accessorKey: "reward.tier",
     header: "Tier",
     cell: ({ row }) => (
-      <Badge variant="outline">
+      <Badge variant={getTierVariant(row.original.reward?.tier)}>
         {row.original.reward?.tier || "BRONZE"}
       </Badge>
     ),
@@ -55,6 +71,7 @@ export const columns: ColumnDef<Customer>[] = [
   {
     id: "actions",
     cell: ({ row }) => {
+      const router = useRouter();
       const customer = row.original;
 
       return (
@@ -66,10 +83,12 @@ export const columns: ColumnDef<Customer>[] = [
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => window.location.href = `/customers/${customer.id}`}>
+            <DropdownMenuItem onClick={() => router.push(`/customers/${customer.id}`)}>
+              <Eye className="mr-2 h-4 w-4" />
               View Details
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => window.location.href = `/orders?customerId=${customer.id}`}>
+            <DropdownMenuItem onClick={() => router.push(`/orders?customerId=${customer.id}`)}>
+              <ShoppingBag className="mr-2 h-4 w-4" />
               View Orders
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -78,3 +97,16 @@ export const columns: ColumnDef<Customer>[] = [
     },
   },
 ];
+
+function getTierVariant(tier?: string) {
+  switch (tier) {
+    case 'PLATINUM':
+      return 'default';
+    case 'GOLD':
+      return 'warning';
+    case 'SILVER':
+      return 'secondary';
+    default:
+      return 'outline';
+  }
+}

@@ -61,8 +61,9 @@ export const columns: ColumnDef<AdminColumn>[] = [
   },
   {
     id: "actions",
-    cell: ({ row }) => {
+    cell: ({ row, table }) => {
       const admin = row.original;
+      const deleteRow = (table.options.meta as any)?.deleteRow;
 
       return (
         <DropdownMenu>
@@ -83,7 +84,14 @@ export const columns: ColumnDef<AdminColumn>[] = [
               <Pencil className="mr-2 h-4 w-4" />
               Edit
             </DropdownMenuItem>
-            <DropdownMenuItem className="text-red-600">
+            <DropdownMenuItem 
+              className="text-red-600"
+              onClick={() => {
+                if (window.confirm('Are you sure you want to delete this administrator?')) {
+                  deleteRow?.(admin.id);
+                }
+              }}
+            >
               <Trash className="mr-2 h-4 w-4" />
               Delete
             </DropdownMenuItem>
