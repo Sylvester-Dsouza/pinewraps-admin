@@ -51,6 +51,7 @@ const productFormSchema = z.object({
   description: z.string().nullable(),
   basePrice: z.coerce.number().min(0, 'Base price must be positive').int('Price must be a whole number'),
   sku: z.string().min(1, 'SKU is required'),
+  slug: z.string().optional(),
   categoryId: z.string().min(1, 'Category is required'),
   status: z.enum(['DRAFT', 'ACTIVE']),
   variations: z.array(z.object({
@@ -113,6 +114,7 @@ export default function ProductForm({
       description: initialData?.description || '',
       basePrice: initialData?.basePrice || 0,
       sku: initialData?.sku || '',
+      slug: initialData?.slug || '',
       categoryId: initialData?.category?.id || '',
       status: initialData?.status || 'DRAFT',
       variations: initialData?.variations || [],
@@ -183,6 +185,7 @@ export default function ProductForm({
         description: initialData.description || '',
         basePrice: initialData.basePrice || 0,
         sku: initialData.sku,
+        slug: initialData.slug || '',
         categoryId: initialData.category?.id || '',
         status: initialData.status || 'DRAFT',
         variations: initialData.variations || [],
@@ -396,6 +399,7 @@ const removeImage = (id: string) => {
       formData.append('description', data.description || '');
       formData.append('basePrice', data.basePrice.toString());
       formData.append('sku', data.sku);
+      formData.append('slug', data.slug || '');
       formData.append('categoryId', data.categoryId);
       formData.append('status', data.status);
 
@@ -566,7 +570,7 @@ const removeImage = (id: string) => {
                           </FormControl>
                           <FormMessage />
                           <p className="text-xs text-gray-500 mt-1">
-                            Note: This price will only be used if no variations are set. For products with variations, set prices in the variants section.
+                            Note: Add this Price Always as the base price
                           </p>
                         </FormItem>
                       )}
@@ -599,26 +603,23 @@ const removeImage = (id: string) => {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel className="text-gray-700 font-medium">Category</FormLabel>
-                          <Select
-                            onValueChange={field.onChange}
-                            value={field.value}
-                          >
-                            <FormControl>
+                          <FormControl>
+                            <Select
+                              value={field.value}
+                              onValueChange={field.onChange}
+                            >
                               <SelectTrigger>
                                 <SelectValue placeholder="Select a category" />
                               </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {categories.map((category) => (
-                                <SelectItem 
-                                  key={category.id} 
-                                  value={category.id}
-                                >
-                                  {category.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                              <SelectContent>
+                                {categories.map((category) => (
+                                  <SelectItem key={category.id} value={category.id}>
+                                    {category.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -626,10 +627,39 @@ const removeImage = (id: string) => {
 
                     <FormField
                       control={form.control}
-                      name="status"
+                      name="slug"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-gray-700 font-medium">Status</FormLabel>
+                          <FormLabel className="text-gray-700 font-medium">URL Slug</FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <span className="absolute left-3 top-2.5 text-gray-500">
+                                <Tag className="h-5 w-5" />
+                              </span>
+                              <Input 
+                                placeholder="Enter URL slug (optional)" 
+                                className="pl-10" 
+                                {...field} 
+                                value={field.value || ''}
+                              />
+                            </div>
+                          </FormControl>
+                          <p className="text-xs text-gray-500 mt-1">
+                            Leave empty to auto-generate from product name
+                          </p>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <FormField
+                    control={form.control}
+                    name="status"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-gray-700 font-medium">Status</FormLabel>
+                        <FormControl>
                           <Select
                             value={field.value}
                             onValueChange={field.onChange}
@@ -644,11 +674,11 @@ const removeImage = (id: string) => {
                               <SelectItem value="ACTIVE">Active</SelectItem>
                             </SelectContent>
                           </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </div>
               </CardContent>
             </Card>
