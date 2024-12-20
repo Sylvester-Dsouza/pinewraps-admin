@@ -1,0 +1,102 @@
+### Variables
+@baseUrl = http://localhost:3000/api
+@productId = your-product-id-here
+
+### 1. Create a new product
+POST {{baseUrl}}/products
+Content-Type: application/json
+
+{
+  "name": "Test Chocolate Cake",
+  "description": "A delicious chocolate cake for testing",
+  "basePrice": 99.99,
+  "sku": "CAKE-TEST-001",
+  "category": "Cakes",
+  "status": "draft",
+  "variants": {
+    "size": [
+      {
+        "value": "6 inch",
+        "priceAdjustment": 0,
+        "stock": 10
+      },
+      {
+        "value": "8 inch",
+        "priceAdjustment": 20,
+        "stock": 5
+      }
+    ],
+    "flavour": [
+      {
+        "value": "Chocolate",
+        "priceAdjustment": 0,
+        "stock": 10
+      },
+      {
+        "value": "Vanilla",
+        "priceAdjustment": 5,
+        "stock": 8
+      }
+    ]
+  }
+}
+
+### 2. Get all products
+GET {{baseUrl}}/products
+
+### 3. Get all products with filters
+GET {{baseUrl}}/products?status=draft&category=Cakes&page=1&limit=10
+
+### 4. Search products
+GET {{baseUrl}}/products?search=chocolate
+
+### 5. Get single product
+GET {{baseUrl}}/products/{{productId}}
+
+### 6. Update product
+PUT {{baseUrl}}/products/{{productId}}
+Content-Type: application/json
+
+{
+  "name": "Updated Chocolate Cake",
+  "basePrice": 109.99,
+  "status": "published"
+}
+
+### 7. Upload product image
+POST {{baseUrl}}/products/{{productId}}/media
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="file"; filename="test-image.jpg"
+Content-Type: image/jpeg
+
+< ./test-image.jpg
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="order"
+
+1
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### 8. Reorder product images
+PUT {{baseUrl}}/products/{{productId}}/media
+Content-Type: application/json
+
+{
+  "mediaOrder": [
+    {
+      "mediaId": "image-id-1",
+      "order": 2
+    },
+    {
+      "mediaId": "image-id-2",
+      "order": 1
+    }
+  ]
+}
+
+### 9. Delete product image
+DELETE {{baseUrl}}/products/{{productId}}/media/image-id-1
+
+### 10. Delete product
+DELETE {{baseUrl}}/products/{{productId}}
