@@ -63,18 +63,33 @@ export default function EditProductClient({ productId }: EditProductClientProps)
       const productData = await productResponse.json();
       const categoriesData = await categoriesResponse.json();
 
-      if (!productData.success || !productData.data?.product) {
-        throw new Error('Invalid product data format');
+      if (!productData.success) {
+        throw new Error(productData.error || 'Failed to fetch product data');
       }
 
-      if (!categoriesData.success || !categoriesData.data?.categories) {
+      if (!categoriesData.success || !Array.isArray(categoriesData.data?.categories)) {
         throw new Error('Invalid categories data format');
       }
 
-      console.log('Fetched product:', productData.data.product);
+      // Get the product from the response
+      const product = productData.data;
+      if (!product) {
+        throw new Error('Product data not found');
+      }
+
+      console.log('Fetched product:', product);
       console.log('Fetched categories:', categoriesData.data.categories);
 
-      setProduct(productData.data.product);
+      // Format the product data
+      const formattedProduct = {
+        ...product,
+        variations: product.variations || [],
+        variantCombinations: typeof product.variantCombinations === 'string' 
+          ? JSON.parse(product.variantCombinations || '[]')
+          : product.variantCombinations || []
+      };
+
+      setProduct(formattedProduct);
       setCategories(categoriesData.data.categories);
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -106,7 +121,7 @@ export default function EditProductClient({ productId }: EditProductClientProps)
 
       // Convert FormData to JSON for better control
       const formObject: Record<string, any> = {};
-      const jsonFields = ['variations', 'deletedImages'];
+      const jsonFields = ['variations', 'combinations', 'deletedImages'];
       
       // Debug: Log all form data entries
       console.log('Form data entries:');
@@ -196,10 +211,22 @@ export default function EditProductClient({ productId }: EditProductClientProps)
             const parsedValue = JSON.parse(value as string);
             // Only include non-empty arrays
             if (Array.isArray(parsedValue) && parsedValue.length > 0) {
-              formObject[key] = parsedValue;
+              if (key === 'combinations') {
+                // Ensure each combination has the required fields
+                formObject[key] = parsedValue.map(combo => ({
+                  size: combo.size || '',
+                  flavour: combo.flavour || '',
+                  price: parseFloat(combo.price) || 0
+                }));
+              } else {
+                formObject[key] = parsedValue;
+              }
             }
           } catch (e) {
             console.error(`Error parsing ${key}:`, e);
+            if (key === 'combinations') {
+              formObject[key] = []; // Default to empty array if parsing fails
+            }
           }
         } else if (key === 'existingImages') {
           try {

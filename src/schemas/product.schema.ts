@@ -14,6 +14,13 @@ const productVariantSchema = z.object({
   options: z.array(variantOptionSchema),
 });
 
+// Variant combination schema
+const variantCombinationSchema = z.object({
+  size: z.string(),
+  flavour: z.string(),
+  price: z.number().default(0),
+});
+
 // Base product schema for both create and update
 export const baseProductSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -23,6 +30,7 @@ export const baseProductSchema = z.object({
   categoryId: z.string().min(1, 'Category is required'),
   status: z.nativeEnum(ProductStatus),
   variations: z.array(productVariantSchema).optional(),
+  combinations: z.array(variantCombinationSchema).optional().default([]),
   specifications: z.record(z.string()).optional(),
   tags: z.array(z.string()).optional(),
 });

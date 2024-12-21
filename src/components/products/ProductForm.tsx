@@ -48,6 +48,8 @@ const PRODUCT_STATUSES = [
 
 const productFormSchema = z.object({
   name: z.string().min(1, 'Name is required'),
+  slug: z.string().min(1, 'Slug is required')
+    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'Slug must contain only lowercase letters, numbers, and hyphens'),
   description: z.string().nullable(),
   basePrice: z.coerce.number().min(0, 'Base price must be positive').int('Price must be a whole number'),
   sku: z.string().min(1, 'SKU is required'),
@@ -100,6 +102,7 @@ export default function ProductForm({
   const [showVariants, setShowVariants] = useState(false);
   const [editingVariants, setEditingVariants] = useState(false);
   const [variantCombinations, setVariantCombinations] = useState<VariantCombination[]>([]);
+  const [isSlugEdited, setIsSlugEdited] = useState(false);
   const [variants, setVariants] = useState<ProductVariant[]>([
     { type: VariationType.SIZE, options: [] },
     { type: VariationType.FLAVOUR, options: [] }
@@ -110,6 +113,7 @@ export default function ProductForm({
     resolver: zodResolver(productFormSchema),
     defaultValues: {
       name: initialData?.name || '',
+      slug: initialData?.slug || '',
       description: initialData?.description || '',
       basePrice: initialData?.basePrice || 0,
       sku: initialData?.sku || '',
@@ -135,51 +139,64 @@ export default function ProductForm({
     }
   }, [initialData?.images]);
 
-  // Initialize variants from initialData if they exist
+  // Initialize variants and combinations from initialData if they exist
   useEffect(() => {
     if (initialData?.variations && initialData.variations.length > 0) {
       setVariants(initialData.variations);
       setShowVariants(true);
-      setEditingVariants(true);
+      setEditingVariants(false); // Set to false initially
+
+      // Parse variant combinations if they exist
+      let existingCombinations = [];
+      try {
+        existingCombinations = typeof initialData.variantCombinations === 'string'
+          ? JSON.parse(initialData.variantCombinations)
+          : initialData.variantCombinations || [];
+      } catch (e) {
+        console.error('Error parsing variant combinations:', e);
+        existingCombinations = [];
+      }
 
       // Generate combinations
       const sizes = initialData.variations.find(v => v.type === VariationType.SIZE)?.options || [];
       const flavours = initialData.variations.find(v => v.type === VariationType.FLAVOUR)?.options || [];
-      
+
       const combinations: VariantCombination[] = [];
       sizes.forEach(size => {
         if (size.value.trim()) {
           flavours.forEach(flavour => {
             if (flavour.value.trim()) {
-              const existingCombination = initialData.combinations?.find(
-                c => c.size === size.value && c.flavour === flavour.value
+              // Look for existing combination price
+              const existingCombination = existingCombinations.find(
+                (c: any) => c.size === size.value && c.flavour === flavour.value
               );
 
-              const price = existingCombination?.price !== undefined 
-                ? existingCombination.price
-                : (initialData.basePrice || 0) + Number(size.priceAdjustment || 0) + Number(flavour.priceAdjustment || 0);
+              const basePrice = initialData.basePrice || 0;
+              const sizeAdjustment = Number(size.priceAdjustment || 0);
+              const flavourAdjustment = Number(flavour.priceAdjustment || 0);
 
               combinations.push({
                 size: size.value,
                 flavour: flavour.value,
-                price: price
+                price: existingCombination?.price ?? (basePrice + sizeAdjustment + flavourAdjustment)
               });
             }
           });
         }
       });
-      
+
       setVariantCombinations(combinations);
     }
-  }, [initialData?.variations]);
+  }, [initialData?.variations, initialData?.variantCombinations, initialData?.basePrice]);
 
   // Update form when initialData changes
   useEffect(() => {
     if (initialData) {
       console.log('Setting form data from initialData:', initialData);
-      
+
       form.reset({
         name: initialData.name,
+        slug: initialData.slug,
         description: initialData.description || '',
         basePrice: initialData.basePrice || 0,
         sku: initialData.sku,
@@ -205,48 +222,69 @@ export default function ProductForm({
   const currentValues = form.getValues();
   console.log('Current form values:', currentValues);
 
+  // Generate slug from name if not manually edited
+  useEffect(() => {
+    const subscription = form.watch((value, { name }) => {
+      if (name === 'name' && !isSlugEdited) {
+        const slug = value.name
+          ?.toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/(^-|-$)/g, '');
+        form.setValue('slug', slug || '');
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [form, isSlugEdited]);
+
+  // Handle slug manual edit
+  const handleSlugChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setIsSlugEdited(true);
+    const value = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '');
+    form.setValue('slug', value);
+  };
+
   const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-  const files = event.target.files;
-  if (!files) return;
+    const files = event.target.files;
+    if (!files) return;
 
-  Array.from(files).forEach(file => {
-    if (file.size <= MAX_FILE_SIZE && ACCEPTED_IMAGE_TYPES.includes(file.type)) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const newId = nanoid();
-        setImages(prev => [...prev, file]);
-        setPreviewUrls(prev => [...prev, {
-          id: newId,
-          url: e.target?.result as string
-        }]);
-      };
-      reader.readAsDataURL(file);
-    } else {
-      toast.error(`File ${file.name} is too large or has an invalid format`);
+    Array.from(files).forEach(file => {
+      if (file.size <= MAX_FILE_SIZE && ACCEPTED_IMAGE_TYPES.includes(file.type)) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const newId = nanoid();
+          setImages(prev => [...prev, file]);
+          setPreviewUrls(prev => [...prev, {
+            id: newId,
+            url: e.target?.result as string
+          }]);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        toast.error(`File ${file.name} is too large or has an invalid format`);
+      }
+    });
+
+    // Clear the input value so the same file can be selected again
+    event.target.value = '';
+  };
+
+  const removeImage = (id: string) => {
+    console.log('Removing image with id:', id);
+
+    // Simply remove the image from both state arrays
+    setPreviewUrls(prev => prev.filter(img => img.id !== id));
+    setImages(prev => {
+      const indexToRemove = previewUrls.findIndex(img => img.id === id);
+      return prev.filter((_, index) => index !== indexToRemove);
+    });
+
+    // If it's an existing image, mark it for deletion
+    const imageToRemove = previewUrls.find(img => img.id === id);
+    if (imageToRemove?.url.startsWith('http')) {
+      const currentDeletedImages = form.getValues('deletedImages') || [];
+      form.setValue('deletedImages', [...currentDeletedImages, id]);
     }
-  });
-
-  // Clear the input value so the same file can be selected again
-  event.target.value = '';
-};
-
-const removeImage = (id: string) => {
-  console.log('Removing image with id:', id);
-  
-  // Simply remove the image from both state arrays
-  setPreviewUrls(prev => prev.filter(img => img.id !== id));
-  setImages(prev => {
-    const indexToRemove = previewUrls.findIndex(img => img.id === id);
-    return prev.filter((_, index) => index !== indexToRemove);
-  });
-  
-  // If it's an existing image, mark it for deletion
-  const imageToRemove = previewUrls.find(img => img.id === id);
-  if (imageToRemove?.url.startsWith('http')) {
-    const currentDeletedImages = form.getValues('deletedImages') || [];
-    form.setValue('deletedImages', [...currentDeletedImages, id]);
-  }
-};
+  };
 
   const handleReorderImages = (newOrder: Array<{ id: string; url: string }>) => {
     // Reorder the images array to match the new preview order
@@ -254,7 +292,7 @@ const removeImage = (id: string) => {
       const oldIndex = previewUrls.findIndex(img => img.id === item.id);
       return images[oldIndex];
     });
-    
+
     setImages(newImages);
     setPreviewUrls(newOrder);
   };
@@ -313,37 +351,31 @@ const removeImage = (id: string) => {
   };
 
   const generateCombinations = () => {
-    const sizes = variants.find(v => v.type === VariationType.SIZE)?.options || [];
-    const flavours = variants.find(v => v.type === VariationType.FLAVOUR)?.options || [];
+    const sizeOptions = variants.find(v => v.type === VariationType.SIZE)?.options || [];
+    const flavourOptions = variants.find(v => v.type === VariationType.FLAVOUR)?.options || [];
 
-    // Only generate combinations if both sizes and flavours have valid values
-    if (sizes.some(s => !s.value.trim()) || flavours.some(f => !f.value.trim())) {
-      return;
-    }
+    // Get existing combinations to preserve custom prices
+    const existingCombinations = [...variantCombinations];
 
-    const combinations: VariantCombination[] = [];
-    sizes.forEach(size => {
-      if (size.value.trim()) {
-        flavours.forEach(flavour => {
-          if (flavour.value.trim()) {
-            // Calculate total price adjustment for this combination
-            const totalPriceAdjustment = Number(size.priceAdjustment || 0) + Number(flavour.priceAdjustment || 0);
-            const basePrice = Number(form.getValues('basePrice') || 0);
-            
-            // Try to find existing price for this combination
-            const existing = variantCombinations.find(
-              vc => vc.size === size.value && vc.flavour === flavour.value
-            );
+    const combinations = [];
+    for (const size of sizeOptions) {
+      for (const flavour of flavourOptions) {
+        // Look for existing combination price
+        const existingCombination = existingCombinations.find(
+          combo => combo.size === size.value && combo.flavour === flavour.value
+        );
 
-            combinations.push({
-              size: size.value,
-              flavour: flavour.value,
-              price: existing?.price !== undefined ? existing.price : (basePrice + totalPriceAdjustment)
-            });
-          }
+        const basePrice = form.getValues('basePrice') || 0;
+        const sizeAdjustment = Number(size.priceAdjustment || 0);
+        const flavourAdjustment = Number(flavour.priceAdjustment || 0);
+
+        combinations.push({
+          size: size.value,
+          flavour: flavour.value,
+          price: existingCombination?.price ?? (basePrice + sizeAdjustment + flavourAdjustment)
         });
       }
-    });
+    }
 
     setVariantCombinations(combinations);
   };
@@ -391,63 +423,37 @@ const removeImage = (id: string) => {
     try {
       const formData = new FormData();
 
-      // Add basic product data
+      // Add basic fields
       formData.append('name', data.name);
+      formData.append('slug', data.slug);
       formData.append('description', data.description || '');
       formData.append('basePrice', data.basePrice.toString());
       formData.append('sku', data.sku);
       formData.append('categoryId', data.categoryId);
       formData.append('status', data.status);
 
-      // Add variations with their basic data
-      if (showVariants) {
-        const variationsData = variants.map(variation => ({
-          type: variation.type,
-          options: variation.options.map(option => ({
-            value: option.value,
-            stock: option.stock || 0,
-            priceAdjustment: option.priceAdjustment || 0
-          }))
-        }));
-        formData.append('variations', JSON.stringify(variationsData));
+      // Add variations
+      formData.append('variations', JSON.stringify(variants));
 
-        // Add combinations with their individual prices
-        const combinationsData = variantCombinations.map(combo => ({
-          size: combo.size,
-          flavour: combo.flavour,
-          price: Number(combo.price)
-        }));
-        formData.append('combinations', JSON.stringify(combinationsData));
-      }
+      // Add variant combinations
+      formData.append('combinations', JSON.stringify(variantCombinations));
 
-      // Add existing images with isPrimary flag
-      if (previewUrls.length > 0) {
-        const existingImages = previewUrls
-          .filter(img => img.url.startsWith('http'))
-          .map((img, index) => ({
-            id: img.id,
-            url: img.url,
-            isPrimary: index === 0
-          }));
-        if (existingImages.length > 0) {
-          formData.append('existingImages', JSON.stringify(existingImages));
+      // Handle images
+      if (images.length > 0) {
+        for (const image of images) {
+          formData.append('images', image);
         }
       }
 
-      // Add deleted images if any
-      if (data.deletedImages && data.deletedImages.length > 0) {
-        formData.append('deletedImages', JSON.stringify(data.deletedImages));
+      // Handle existing images
+      if (previewUrls.length > 0) {
+        formData.append('existingImages', JSON.stringify(previewUrls));
       }
-
-      // Add new images
-      images.forEach((file) => {
-        formData.append('images', file);
-      });
 
       await onSubmit(formData);
     } catch (error) {
-      console.error('Error submitting form:', error);
-      toast.error('Failed to save product');
+      console.error('Error in form submission:', error);
+      toast.error('Failed to submit form');
     }
   };
 
@@ -506,6 +512,45 @@ const removeImage = (id: string) => {
                             placeholder="Enter product name"
                             className="w-full"
                           />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="slug"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-gray-700 font-medium">Slug</FormLabel>
+                        <FormControl>
+                          <div className="flex gap-2 items-center">
+                            <Input 
+                              placeholder="product-slug" 
+                              value={field.value} 
+                              onChange={handleSlugChange}
+                              className="font-mono"
+                            />
+                            {isSlugEdited && (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setIsSlugEdited(false);
+                                  const name = form.getValues('name');
+                                  const slug = name
+                                    .toLowerCase()
+                                    .replace(/[^a-z0-9]+/g, '-')
+                                    .replace(/(^-|-$)/g, '');
+                                  form.setValue('slug', slug);
+                                }}
+                              >
+                                Reset
+                              </Button>
+                            )}
+                          </div>
                         </FormControl>
                         <FormMessage />
                       </FormItem>
