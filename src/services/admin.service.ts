@@ -4,9 +4,10 @@ import { toast } from 'react-hot-toast';
 export interface Admin {
   id: string;
   email: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   role: 'ADMIN' | 'SUPER_ADMIN';
-  adminAccess: string[];
+  permissions: string[];
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -25,7 +26,7 @@ export interface AdminResponse {
 export const adminService = {
   getAdmins: async (): Promise<AdminsResponse> => {
     try {
-      const response = await api.get('/api/admins/users');
+      const response = await api.get('/api/admin/users');
       return response.data;
     } catch (error: any) {
       if (error.response?.status === 401) {
@@ -42,7 +43,7 @@ export const adminService = {
 
   getAdmin: async (adminId: string): Promise<AdminResponse> => {
     try {
-      const response = await api.get(`/api/admins/users/${adminId}`);
+      const response = await api.get(`/api/admin/users/${adminId}`);
       return response.data;
     } catch (error: any) {
       if (error.response?.status === 401) {
@@ -62,11 +63,12 @@ export const adminService = {
   createAdmin: async (data: {
     email: string;
     password: string;
-    name: string;
-    adminAccess?: string[];
+    firstName: string;
+    lastName: string;
+    permissions: string[];
   }): Promise<AdminResponse> => {
     try {
-      const response = await api.post('/api/admins/users', data);
+      const response = await api.post('/api/admin/users', data);
       toast.success('Administrator created successfully');
       return response.data;
     } catch (error: any) {
@@ -87,13 +89,15 @@ export const adminService = {
   updateAdmin: async (
     adminId: string,
     data: {
-      name?: string;
+      firstName?: string;
+      lastName?: string;
       password?: string;
-      adminAccess?: string[];
+      permissions?: string[];
+      isActive?: boolean;
     }
   ): Promise<AdminResponse> => {
     try {
-      const response = await api.put(`/api/admins/users/${adminId}`, data);
+      const response = await api.put(`/api/admin/users/${adminId}`, data);
       toast.success('Administrator updated successfully');
       return response.data;
     } catch (error: any) {
@@ -115,7 +119,7 @@ export const adminService = {
 
   deleteAdmin: async (adminId: string): Promise<void> => {
     try {
-      await api.delete(`/api/admins/users/${adminId}`);
+      await api.delete(`/api/admin/users/${adminId}`);
       toast.success('Administrator deleted successfully');
     } catch (error: any) {
       if (error.response?.status === 401) {
@@ -130,5 +134,5 @@ export const adminService = {
       }
       throw error;
     }
-  }
+  },
 };

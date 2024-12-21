@@ -17,33 +17,46 @@ import {
   Bell,
   HelpCircle,
 } from 'lucide-react'
+import { useAdmin } from '@/hooks/use-admin'
 
 const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: Home },
-  { name: 'Products', href: '/products', icon: Package2 },
-  { name: 'Orders', href: '/orders', icon: Package },
-  { name: 'Customers', href: '/customers', icon: Users },
-  { name: 'Admins', href: '/admins', icon: Shield },
-  { name: 'Rewards', href: '/rewards', icon: Gift },
-  { name: 'Coupons', href: '/coupons', icon: Ticket },
-  { name: 'Settings', href: '/settings', icon: Settings },
-  { name: 'Notifications', href: '/notifications', icon: Bell },
-  { name: 'Help', href: '/help', icon: HelpCircle },
+  { name: 'Dashboard', href: '/dashboard', icon: Home, permission: 'DASHBOARD' as const },
+  { name: 'Products', href: '/products', icon: Package2, permission: 'PRODUCTS' as const },
+  { name: 'Orders', href: '/orders', icon: Package, permission: 'ORDERS' as const },
+  { name: 'Customers', href: '/customers', icon: Users, permission: 'CUSTOMERS' as const },
+  { name: 'Admins', href: '/admins', icon: Shield, permission: 'ADMIN' as const },
+  { name: 'Rewards', href: '/rewards', icon: Gift, permission: 'REWARDS' as const },
+  { name: 'Coupons', href: '/coupons', icon: Ticket, permission: 'COUPONS' as const },
+  { name: 'Settings', href: '/settings', icon: Settings, permission: 'SETTINGS' as const },
+  { name: 'Notifications', href: '/notifications', icon: Bell, permission: 'NOTIFICATIONS' as const },
+  { name: 'Help', href: '/help', icon: HelpCircle, permission: 'HELP' as const },
 ]
 
 export default function Sidebar() {
   const pathname = usePathname()
   const router = useRouter()
+  const { hasPermission, isSuperAdmin, loading } = useAdmin()
 
   const handleNavigation = useCallback((href: string) => {
-    // Use the full href without cleaning it
     const currentPath = pathname
-    
-    // Only navigate if we're not already on the page
     if (currentPath !== href) {
       router.push(href, { scroll: false })
     }
   }, [pathname, router])
+
+  if (loading) {
+    return (
+      <div className="flex h-full flex-col bg-white border-r border-gray-200">
+        <div className="flex h-16 shrink-0 items-center border-b border-gray-200 px-6">
+          <span className="text-lg font-semibold text-gray-900">Loading...</span>
+        </div>
+      </div>
+    )
+  }
+
+  const filteredNavigation = navigation.filter(item => 
+    isSuperAdmin || hasPermission(item.permission)
+  )
 
   return (
     <div className="flex h-full flex-col bg-white border-r border-gray-200">
@@ -62,7 +75,7 @@ export default function Sidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto px-4 py-4">
-        {navigation.map((item) => {
+        {filteredNavigation.map((item) => {
           const isActive = pathname === item.href
 
           return (

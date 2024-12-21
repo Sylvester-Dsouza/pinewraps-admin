@@ -10,6 +10,7 @@ import { Plus } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { columns, type AdminColumn } from './columns';
 import { adminService } from '@/services/admin.service';
+import { PermissionGuard } from '@/components/auth/permission-guard';
 
 export default function AdminsPage() {
   const router = useRouter();
@@ -29,8 +30,11 @@ export default function AdminsPage() {
         setAdmins(response.data.map(admin => ({
           id: admin.id,
           email: admin.email,
-          name: admin.name,
+          firstName: admin.firstName,
+          lastName: admin.lastName,
           role: admin.role,
+          permissions: admin.permissions,
+          isActive: admin.isActive,
           createdAt: admin.createdAt
         })));
       }
@@ -52,24 +56,26 @@ export default function AdminsPage() {
   };
 
   return (
-    <div className="flex-1 space-y-4">
-      <div className="flex items-center justify-between">
-        <Heading title="Administrators" description="Manage your admin users" />
-        <div className="flex items-center gap-4">
-          <Button onClick={() => router.push('/admins/new')}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Administrator
-          </Button>
+    <PermissionGuard permission="ADMIN">
+      <div className="flex-1 space-y-4 p-8 pt-6">
+        <div className="flex items-center justify-between">
+          <Heading title="Administrators" description="Manage your admin users" />
+          <div className="flex items-center gap-4">
+            <Button onClick={() => router.push('/admins/create')}>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Administrator
+            </Button>
+          </div>
         </div>
+        <Separator />
+        <DataTable
+          columns={columns}
+          data={admins}
+          searchKey="email"
+          loading={loading}
+          deleteRow={handleDelete}
+        />
       </div>
-      <Separator />
-      <DataTable
-        columns={columns}
-        data={admins}
-        searchKey="email"
-        loading={loading}
-        deleteRow={handleDelete}
-      />
-    </div>
+    </PermissionGuard>
   );
 }

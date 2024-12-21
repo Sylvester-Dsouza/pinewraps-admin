@@ -121,11 +121,14 @@ export const orderService = {
   // Update order status
   updateOrderStatus: async (orderId: string, status: string) => {
     try {
-      const response = await api.put(`/api/orders/${orderId}/status`, { status });
-      return response.data;
+      const response = await api.put<{ success: boolean; data: Order }>(`/api/orders/${orderId}/status`, { status });
+      if (!response.data.success) {
+        throw new Error(response.data?.error?.message || 'Failed to update order status');
+      }
+      return response.data.data;
     } catch (error: any) {
       console.error('Error updating order status:', error);
-      throw new Error(error.response?.data?.message || 'Failed to update order status');
+      throw new Error(error.response?.data?.error?.message || 'Failed to update order status');
     }
   },
 

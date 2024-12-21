@@ -15,8 +15,11 @@ import {
 export type AdminColumn = {
   id: string;
   email: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   role: string;
+  permissions: string[];
+  isActive: boolean;
   createdAt: string;
 };
 
@@ -26,8 +29,13 @@ export const columns: ColumnDef<AdminColumn>[] = [
     header: "Email",
   },
   {
-    accessorKey: "name",
+    id: "name",
     header: "Name",
+    cell: ({ row }) => {
+      const firstName = row.original.firstName;
+      const lastName = row.original.lastName;
+      return `${firstName} ${lastName}`;
+    },
   },
   {
     accessorKey: "role",
@@ -43,6 +51,49 @@ export const columns: ColumnDef<AdminColumn>[] = [
           }
         >
           {role.replace("_", " ")}
+        </Badge>
+      );
+    },
+  },
+  {
+    accessorKey: "permissions",
+    header: "Permissions",
+    cell: ({ row }) => {
+      const permissions = row.getValue("permissions") as string[];
+      return (
+        <div className="flex flex-wrap gap-1">
+          {permissions.slice(0, 2).map((permission) => (
+            <Badge
+              key={permission}
+              variant="outline"
+              className="bg-gray-100 text-gray-800"
+            >
+              {permission}
+            </Badge>
+          ))}
+          {permissions.length > 2 && (
+            <Badge variant="outline" className="bg-gray-100 text-gray-800">
+              +{permissions.length - 2} more
+            </Badge>
+          )}
+        </div>
+      );
+    },
+  },
+  {
+    accessorKey: "isActive",
+    header: "Status",
+    cell: ({ row }) => {
+      const isActive = row.getValue("isActive") as boolean;
+      return (
+        <Badge
+          className={
+            isActive
+              ? "bg-green-100 text-green-800"
+              : "bg-red-100 text-red-800"
+          }
+        >
+          {isActive ? "Active" : "Inactive"}
         </Badge>
       );
     },

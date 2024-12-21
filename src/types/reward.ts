@@ -11,14 +11,15 @@ export type RewardHistory = {
 export type CustomerReward = {
   id: string;
   customerId: string;
-  customer: {
+  customer?: {
     id: string;
-    name: string;
+    firstName: string;
+    lastName: string;
     email: string;
   };
   points: number;
   totalPointsEarned: number;
   totalPointsRedeemed: number;
-  tier: 'BRONZE' | 'SILVER' | 'GOLD' | 'PLATINUM';
-  history: RewardHistory[];
+  tier: 'GREEN' | 'SILVER' | 'GOLD' | 'PLATINUM';
+  history?: RewardHistory[];
 };

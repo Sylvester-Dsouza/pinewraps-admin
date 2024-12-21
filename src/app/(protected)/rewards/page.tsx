@@ -14,15 +14,31 @@ import { getAuth } from 'firebase/auth'
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 
+interface RewardsAnalytics {
+  totalCustomers: number;
+  tierDistribution: {
+    tier: string;
+    count: number;
+  }[];
+  points: {
+    current: number;
+    allTime: number;
+  };
+  recentActivity: any[];
+}
+
 export default function RewardsPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [rewards, setRewards] = useState<CustomerReward[]>([]);
-  const [analytics, setAnalytics] = useState({
-    totalPoints: 0,
+  const [analytics, setAnalytics] = useState<RewardsAnalytics>({
     totalCustomers: 0,
-    averagePoints: 0,
-    activeCustomers: 0,
+    tierDistribution: [],
+    points: {
+      current: 0,
+      allTime: 0
+    },
+    recentActivity: []
   });
 
   const fetchRewards = async () => {
@@ -45,16 +61,32 @@ export default function RewardsPage() {
         },
       });
 
-      setAnalytics(analyticsResponse.data);
+      if (analyticsResponse.data.success) {
+        setAnalytics(analyticsResponse.data.data);
+      }
 
-      // Fetch all customer rewards
-      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/rewards`, {
+      // Fetch all customer rewards with history
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/rewards/customers`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
 
-      setRewards(response.data);
+      if (response.data.success) {
+        const rewardsData = response.data.data;
+        // Ensure we have an array of rewards
+        const rewardsArray = Array.isArray(rewardsData) ? rewardsData : [rewardsData];
+        
+        // Sort history by date for each customer
+        const rewardsWithSortedHistory = rewardsArray.map((reward: CustomerReward) => ({
+          ...reward,
+          history: reward.history?.sort((a, b) => 
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          ) || []
+        }));
+
+        setRewards(rewardsWithSortedHistory);
+      }
     } catch (error) {
       console.error('Error fetching rewards:', error);
       toast.error('Failed to fetch rewards data');
@@ -68,9 +100,9 @@ export default function RewardsPage() {
   }, []);
 
   return (
-    <div className="flex-1 space-y-4">
+    <div className="flex-1 space-y-4 p-8 pt-6">
       <div className="flex items-center justify-between">
-        <Heading title="Rewards" description="Manage your reward programs" />
+        <Heading title="Rewards" description="Manage customer rewards and points" />
         <div className="flex items-center gap-4">
           <Button onClick={() => router.push('/rewards/new')}>Create Reward</Button>
         </div>
@@ -86,7 +118,7 @@ export default function RewardsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {analytics.totalPoints.toLocaleString()} pts
+              {analytics.points.allTime.toLocaleString()} pts
             </div>
           </CardContent>
         </Card>
@@ -104,42 +136,49 @@ export default function RewardsPage() {
             </div>
           </CardContent>
         </Card>
-
+        
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Average Points
-            </CardTitle>
-            <Gift className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {analytics.averagePoints.toLocaleString()} pts
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Active Customers
+              Active Points
             </CardTitle>
             <Coins className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {analytics.activeCustomers.toLocaleString()}
+              {analytics.points.current.toLocaleString()} pts
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Platinum Members
+            </CardTitle>
+            <Gift className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {(analytics.tierDistribution.find(t => t.tier === 'PLATINUM')?.count || 0).toLocaleString()}
             </div>
           </CardContent>
         </Card>
       </div>
 
-      <DataTable 
-        columns={columns} 
-        data={rewards} 
-        searchKey="customer.name"
-        loading={loading}
-      />
+      <Card className="col-span-4">
+        <CardHeader>
+          <CardTitle>Customer Rewards</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <DataTable 
+            columns={columns} 
+            data={rewards} 
+            searchKey="customerName"
+            loading={loading}
+          />
+        </CardContent>
+      </Card>
     </div>
   );
 }

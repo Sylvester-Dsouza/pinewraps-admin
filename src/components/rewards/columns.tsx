@@ -5,10 +5,16 @@ import { ArrowUpDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { CustomerReward } from "@/types/reward"
+import { RewardHistoryDialog } from "./reward-history-dialog"
 
 export const columns: ColumnDef<CustomerReward>[] = [
   {
-    accessorKey: "customer.name",
+    id: "customerName",
+    accessorFn: (row) => {
+      const firstName = row.customer?.firstName || '';
+      const lastName = row.customer?.lastName || '';
+      return `${firstName} ${lastName}`.trim() || 'N/A';
+    },
     header: ({ column }) => {
       return (
         <Button
@@ -22,7 +28,8 @@ export const columns: ColumnDef<CustomerReward>[] = [
     },
   },
   {
-    accessorKey: "customer.email",
+    id: "customerEmail",
+    accessorFn: (row) => row.customer?.email || 'N/A',
     header: "Email",
   },
   {
@@ -39,7 +46,7 @@ export const columns: ColumnDef<CustomerReward>[] = [
       )
     },
     cell: ({ row }) => {
-      const points = row.getValue("points") as number
+      const points = row.getValue("points") as number || 0
       return (
         <Badge variant={points > 0 ? "default" : "secondary"}>
           {points} pts
@@ -51,7 +58,7 @@ export const columns: ColumnDef<CustomerReward>[] = [
     accessorKey: "tier",
     header: "Tier",
     cell: ({ row }) => {
-      const tier = row.getValue("tier") as string
+      const tier = row.getValue("tier") as string || 'GREEN'
       return (
         <Badge variant="outline" className={
           tier === 'PLATINUM' ? 'bg-purple-100 text-purple-800 border-purple-200' :
@@ -78,7 +85,7 @@ export const columns: ColumnDef<CustomerReward>[] = [
       )
     },
     cell: ({ row }) => {
-      const points = row.getValue("totalPointsEarned") as number
+      const points = row.getValue("totalPointsEarned") as number || 0
       return (
         <span className="text-green-600">
           +{points} pts
@@ -100,7 +107,7 @@ export const columns: ColumnDef<CustomerReward>[] = [
       )
     },
     cell: ({ row }) => {
-      const points = row.getValue("totalPointsRedeemed") as number
+      const points = row.getValue("totalPointsRedeemed") as number || 0
       return (
         <span className="text-red-600">
           -{points} pts
@@ -109,22 +116,18 @@ export const columns: ColumnDef<CustomerReward>[] = [
     },
   },
   {
-    accessorKey: "history",
-    header: "Latest Activity",
+    id: "history",
+    header: "History",
     cell: ({ row }) => {
-      const history = row.getValue("history") as CustomerReward["history"]
-      const latest = history[0]
-      if (!latest) return "No activity"
-      
+      const reward = row.original
+      const customerName = reward.customer ? 
+        `${reward.customer.firstName} ${reward.customer.lastName}`.trim() : 
+        'N/A'
       return (
-        <div className="flex flex-col gap-1">
-          <span className={latest.type === 'EARNED' ? 'text-green-600' : 'text-red-600'}>
-            {latest.type === 'EARNED' ? '+' : '-'}{latest.points} pts
-          </span>
-          <span className="text-sm text-gray-500">
-            {new Date(latest.createdAt).toLocaleDateString()}
-          </span>
-        </div>
+        <RewardHistoryDialog 
+          history={reward.history || []} 
+          customerName={customerName}
+        />
       )
     },
   },

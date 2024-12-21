@@ -2,6 +2,7 @@
 
 import { ProtectedRoute } from '@/components/auth/protected-route';
 import DashboardLayout from '@/components/shared/layouts/dashboard-layout';
+import { AdminProvider } from '@/hooks/use-admin';
 
 export default function ProtectedLayout({
   children,
@@ -10,9 +11,11 @@ export default function ProtectedLayout({
 }) {
   return (
     <ProtectedRoute>
-      <DashboardLayout>
-        {children}
-      </DashboardLayout>
+      <AdminProvider>
+        <DashboardLayout>
+          {children}
+        </DashboardLayout>
+      </AdminProvider>
     </ProtectedRoute>
   );
 }

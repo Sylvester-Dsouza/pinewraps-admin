@@ -270,19 +270,16 @@ export default function OrderDetailsPage() {
   const updateOrderStatus = async (newStatus: string) => {
     try {
       setIsUpdatingStatus(true);
-      const response = await orderService.updateOrderStatus(params.orderId as string, newStatus);
-      if (response.success) {
-        // Update both the order status and selectedStatus
-        setOrder(prevOrder => ({
-          ...prevOrder,
-          status: newStatus  // Use newStatus directly instead of response.data.status
-        }));
-        setSelectedStatus(newStatus);
-        toast({
-          title: "Status Updated",
-          description: `Order status has been updated to ${formatStatus(newStatus)}`,
-        });
-      }
+      const updatedOrder = await orderService.updateOrderStatus(params.orderId as string, newStatus);
+      
+      // Update the order state with the new data
+      setOrder(updatedOrder);
+      setSelectedStatus(updatedOrder.status as OrderStatus);
+      
+      toast({
+        title: "Status Updated",
+        description: `Order status has been updated to ${formatStatus(newStatus)}`,
+      });
     } catch (error: any) {
       console.error('Error updating order status:', error);
       toast({
@@ -290,6 +287,10 @@ export default function OrderDetailsPage() {
         description: error.message || "Failed to update order status",
         variant: "destructive"
       });
+      // Reset the selected status to the current order status
+      if (order) {
+        setSelectedStatus(order.status as OrderStatus);
+      }
     } finally {
       setIsUpdatingStatus(false);
     }
