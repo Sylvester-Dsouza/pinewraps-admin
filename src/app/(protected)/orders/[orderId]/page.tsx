@@ -461,28 +461,57 @@ export default function OrderDetailsPage() {
                   <span className="text-gray-600">Subtotal</span>
                   <span>{formatCurrency(calculateSubtotal(order.items))}</span>
                 </div>
-                {(order.couponCode || order.pricing?.discountAmount > 0) && (
+
+                {/* Coupon Discount */}
+                {(order.couponCode || order.couponDiscount > 0 || order.pricing?.couponDiscount > 0) && (
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600 flex items-center gap-2">
                       <Gift className="h-4 w-4" />
-                      Coupon Applied {order.couponCode && `(${order.couponCode})`}
+                      Coupon Discount {order.couponCode && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700">
+                          {order.couponCode}
+                        </span>
+                      )}
                     </span>
-                    <span className="text-red-600">-{formatCurrency(order.pricing?.discountAmount || order.couponDiscount || 0)}</span>
+                    <span className="text-red-600">
+                      -{formatCurrency(order.couponDiscount || order.pricing?.couponDiscount || 0)}
+                    </span>
                   </div>
                 )}
-                {order.pointsRedeemed > 0 && (
+
+                {/* Points Redemption */}
+                {(order.pointsRedeemed > 0 || order.pricing?.pointsValue > 0) && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Rewards Points Used ({order.pointsRedeemed} points)</span>
-                    <span className="text-red-600">-{formatCurrency(order.pricing?.pointsValue || order.pointsValue || 0)}</span>
+                    <span className="text-gray-600 flex items-center gap-2">
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      Rewards Points ({order.pointsRedeemed || order.pricing?.pointsRedeemed} points)
+                    </span>
+                    <span className="text-red-600">
+                      -{formatCurrency(order.pricing?.pointsValue || order.pointsValue || 0)}
+                    </span>
                   </div>
                 )}
+
+                {/* Delivery Charge */}
                 {(order.delivery?.charge > 0 || order.deliveryCharge > 0) && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Delivery Charge ({order.delivery?.type || order.deliveryMethod})</span>
+                    <span className="text-gray-600 flex items-center gap-2">
+                      <Truck className="h-4 w-4" />
+                      Delivery Charge
+                      {(order.delivery?.type || order.deliveryMethod) && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-50 text-gray-700">
+                          {order.delivery?.type || order.deliveryMethod}
+                        </span>
+                      )}
+                    </span>
                     <span>{formatCurrency(order.delivery?.charge || order.deliveryCharge || 0)}</span>
                   </div>
                 )}
-                {(order.isGift || order.pricing?.giftWrapCharge > 0) && (
+
+                {/* Gift Wrap Charge */}
+                {(order.isGift || order.pricing?.giftWrapCharge > 0 || order.giftWrapCharge > 0) && (
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600 flex items-center gap-2">
                       <Gift className="h-4 w-4" />
@@ -491,11 +520,30 @@ export default function OrderDetailsPage() {
                     <span>{formatCurrency(order.pricing?.giftWrapCharge || order.giftWrapCharge || 0)}</span>
                   </div>
                 )}
+
                 <Separator className="my-2" />
+
+                {/* Total */}
                 <div className="flex justify-between text-base font-medium">
                   <span>Total</span>
                   <span>{formatCurrency(order.total)}</span>
                 </div>
+
+                {/* Savings Summary */}
+                {(order.couponDiscount > 0 || order.pricing?.couponDiscount > 0 || 
+                  order.pointsValue > 0 || order.pricing?.pointsValue > 0) && (
+                  <div className="mt-2 p-2 bg-green-50 rounded-lg">
+                    <p className="text-sm text-green-700 flex items-center gap-2">
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      Total Savings: {formatCurrency(
+                        (order.couponDiscount || order.pricing?.couponDiscount || 0) +
+                        (order.pointsValue || order.pricing?.pointsValue || 0)
+                      )}
+                    </p>
+                  </div>
+                )}
               </div>
             </Card>
 
