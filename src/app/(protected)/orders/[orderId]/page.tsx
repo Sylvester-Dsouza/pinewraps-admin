@@ -510,17 +510,6 @@ export default function OrderDetailsPage() {
                   </div>
                 )}
 
-                {/* Gift Wrap Charge */}
-                {(order.isGift || order.pricing?.giftWrapCharge > 0 || order.giftWrapCharge > 0) && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600 flex items-center gap-2">
-                      <Gift className="h-4 w-4" />
-                      Gift Wrap
-                    </span>
-                    <span>{formatCurrency(order.pricing?.giftWrapCharge || order.giftWrapCharge || 0)}</span>
-                  </div>
-                )}
-
                 <Separator className="my-2" />
 
                 {/* Total */}
@@ -682,36 +671,71 @@ export default function OrderDetailsPage() {
               )}
             </Card>
 
-            {/* Gift Message */}
-            {order?.isGift && order?.giftMessage && (
+            {/* Gift Information */}
+            {order?.isGift && (
               <Card className="p-6">
                 <div className="flex items-center gap-2 mb-4">
                   <div className="h-8 w-8 rounded-full bg-pink-50 flex items-center justify-center">
                     <Gift className="h-4 w-4 text-pink-600" />
                   </div>
                   <div>
-                    <h2 className="text-lg font-semibold">Gift Message</h2>
-                    <p className="text-sm text-gray-500">Message to be included with the gift</p>
+                    <h2 className="text-lg font-semibold">Gift Information</h2>
+                    <p className="text-sm text-gray-500">Gift recipient and message details</p>
                   </div>
                 </div>
-                <div className="bg-pink-50/50 rounded-lg p-4 border border-pink-100">
-                  <div className="relative">
-                    <div className="absolute -top-2 -left-2 text-pink-400 transform -rotate-12">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M9 17V7m0 10a2 2 0 0 1-2-2V5a2 2 0 1 1 4 0v10a2 2 0 0 1-2 2z"/>
-                        <path d="M15 17V7m0 10a2 2 0 0 1-2-2V5a2 2 0 1 1 4 0v10a2 2 0 0 1-2 2z"/>
-                      </svg>
+
+                {/* Gift Recipient Details */}
+                <div className="space-y-4">
+                  {/* Recipient Name */}
+                  {order.giftRecipientName && (
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 text-gray-700">
+                        <User className="h-4 w-4" />
+                        <p className="text-sm font-medium">Recipient Name</p>
+                      </div>
+                      <p className="text-base pl-6">{order.giftRecipientName}</p>
                     </div>
-                    <p className="text-base whitespace-pre-line pl-6 pr-4 py-2 text-gray-700">
-                      {order.giftMessage}
-                    </p>
-                    <div className="absolute -bottom-2 -right-2 text-pink-400 transform rotate-12">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M9 17V7m0 10a2 2 0 0 1-2-2V5a2 2 0 1 1 4 0v10a2 2 0 0 1-2 2z"/>
-                        <path d="M15 17V7m0 10a2 2 0 0 1-2-2V5a2 2 0 1 1 4 0v10a2 2 0 0 1-2 2z"/>
-                      </svg>
+                  )}
+
+                  {/* Recipient Phone */}
+                  {order.giftRecipientPhone && (
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 text-gray-700">
+                        <Phone className="h-4 w-4" />
+                        <p className="text-sm font-medium">Recipient Phone</p>
+                      </div>
+                      <p className="text-base pl-6">{order.giftRecipientPhone}</p>
                     </div>
-                  </div>
+                  )}
+
+                  {/* Gift Message */}
+                  {order.giftMessage && (
+                    <div className="mt-4">
+                      <div className="flex items-center gap-2 text-gray-700 mb-2">
+                        <MessageSquare className="h-4 w-4" />
+                        <p className="text-sm font-medium">Gift Message</p>
+                      </div>
+                      <div className="bg-pink-50/50 rounded-lg p-4 border border-pink-100">
+                        <div className="relative">
+                          <div className="absolute -top-2 -left-2 text-pink-400 transform -rotate-12">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M9 17V7m0 10a2 2 0 0 1-2-2V5a2 2 0 1 1 4 0v10a2 2 0 0 1-2 2z"/>
+                              <path d="M15 17V7m0 10a2 2 0 0 1-2-2V5a2 2 0 1 1 4 0v10a2 2 0 0 1-2 2z"/>
+                            </svg>
+                          </div>
+                          <p className="text-base whitespace-pre-line pl-6 pr-4 py-2 text-gray-700">
+                            {order.giftMessage}
+                          </p>
+                          <div className="absolute -bottom-2 -right-2 text-pink-400 transform rotate-12">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M9 17V7m0 10a2 2 0 0 1-2-2V5a2 2 0 1 1 4 0v10a2 2 0 0 1-2 2z"/>
+                              <path d="M15 17V7m0 10a2 2 0 0 1-2-2V5a2 2 0 1 1 4 0v10a2 2 0 0 1-2 2z"/>
+                            </svg>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </Card>
             )}
