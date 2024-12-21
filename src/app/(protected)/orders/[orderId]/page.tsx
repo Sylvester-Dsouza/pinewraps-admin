@@ -635,14 +635,35 @@ export default function OrderDetailsPage() {
             </Card>
 
             {/* Gift Message */}
-            {orderSnapshot.isGift && orderSnapshot.giftMessage && (
+            {order?.isGift && order?.giftMessage && (
               <Card className="p-6">
-                <h2 className="text-lg font-semibold flex items-center gap-2 mb-4">
-                  <Gift className="h-5 w-5" />
-                  Gift Message
-                </h2>
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <p className="text-sm italic">"{orderSnapshot.giftMessage}"</p>
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="h-8 w-8 rounded-full bg-pink-50 flex items-center justify-center">
+                    <Gift className="h-4 w-4 text-pink-600" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-semibold">Gift Message</h2>
+                    <p className="text-sm text-gray-500">Message to be included with the gift</p>
+                  </div>
+                </div>
+                <div className="bg-pink-50/50 rounded-lg p-4 border border-pink-100">
+                  <div className="relative">
+                    <div className="absolute -top-2 -left-2 text-pink-400 transform -rotate-12">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M9 17V7m0 10a2 2 0 0 1-2-2V5a2 2 0 1 1 4 0v10a2 2 0 0 1-2 2z"/>
+                        <path d="M15 17V7m0 10a2 2 0 0 1-2-2V5a2 2 0 1 1 4 0v10a2 2 0 0 1-2 2z"/>
+                      </svg>
+                    </div>
+                    <p className="text-base whitespace-pre-line pl-6 pr-4 py-2 text-gray-700">
+                      {order.giftMessage}
+                    </p>
+                    <div className="absolute -bottom-2 -right-2 text-pink-400 transform rotate-12">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M9 17V7m0 10a2 2 0 0 1-2-2V5a2 2 0 1 1 4 0v10a2 2 0 0 1-2 2z"/>
+                        <path d="M15 17V7m0 10a2 2 0 0 1-2-2V5a2 2 0 1 1 4 0v10a2 2 0 0 1-2 2z"/>
+                      </svg>
+                    </div>
+                  </div>
                 </div>
               </Card>
             )}
