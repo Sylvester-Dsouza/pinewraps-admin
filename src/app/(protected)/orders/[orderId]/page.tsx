@@ -673,16 +673,21 @@ export default function OrderDetailsPage() {
             </Card>
 
             {/* Gift Information */}
-            {order?.isGift && (
+            {(order?.isGift || order?.giftRecipientName || order?.giftRecipientPhone || order?.giftMessage) && (
               <Card className="p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="h-8 w-8 rounded-full bg-pink-50 flex items-center justify-center">
-                    <Gift className="h-4 w-4 text-pink-600" />
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <div className="h-8 w-8 rounded-full bg-pink-50 flex items-center justify-center">
+                      <Gift className="h-4 w-4 text-pink-600" />
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-semibold">Gift Information</h2>
+                      <p className="text-sm text-gray-500">Gift recipient and message details</p>
+                    </div>
                   </div>
-                  <div>
-                    <h2 className="text-lg font-semibold">Gift Information</h2>
-                    <p className="text-sm text-gray-500">Gift recipient and message details</p>
-                  </div>
+                  <Badge variant="outline" className="bg-pink-50 text-pink-700 border-pink-200">
+                    Gift Order
+                  </Badge>
                 </div>
 
                 {/* Gift Recipient Details */}
@@ -694,7 +699,9 @@ export default function OrderDetailsPage() {
                         <User className="h-4 w-4" />
                         <p className="text-sm font-medium">Recipient Name</p>
                       </div>
-                      <p className="text-base pl-6">{order.giftRecipientName}</p>
+                      <div className="bg-gray-50 rounded-lg p-3 border border-gray-100">
+                        <p className="text-base">{order.giftRecipientName}</p>
+                      </div>
                     </div>
                   )}
 
@@ -705,7 +712,9 @@ export default function OrderDetailsPage() {
                         <Phone className="h-4 w-4" />
                         <p className="text-sm font-medium">Recipient Phone</p>
                       </div>
-                      <p className="text-base pl-6">{order.giftRecipientPhone}</p>
+                      <div className="bg-gray-50 rounded-lg p-3 border border-gray-100">
+                        <p className="text-base">{order.giftRecipientPhone}</p>
+                      </div>
                     </div>
                   )}
 
@@ -734,6 +743,19 @@ export default function OrderDetailsPage() {
                             </svg>
                           </div>
                         </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Gift Note */}
+                  {order.giftNote && (
+                    <div className="mt-4">
+                      <div className="flex items-center gap-2 text-gray-700 mb-2">
+                        <FileText className="h-4 w-4" />
+                        <p className="text-sm font-medium">Additional Gift Note</p>
+                      </div>
+                      <div className="bg-gray-50 rounded-lg p-3 border border-gray-100">
+                        <p className="text-base whitespace-pre-line">{order.giftNote}</p>
                       </div>
                     </div>
                   )}

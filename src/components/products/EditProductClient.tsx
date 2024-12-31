@@ -283,8 +283,9 @@ export default function EditProductClient({ productId }: EditProductClientProps)
         description: "Your changes have been saved successfully.",
       });
 
-      router.push('/products');
-      router.refresh();
+      // Instead of redirecting, refresh the data
+      await fetchData();
+      router.refresh(); // This refreshes the Next.js cache
     } catch (error) {
       console.error('Error details:', error);
       toast({
