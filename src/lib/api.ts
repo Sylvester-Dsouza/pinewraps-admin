@@ -2,7 +2,11 @@ import axios, { AxiosError } from 'axios'
 import { auth } from './firebase'
 import { signInWithEmailAndPassword } from 'firebase/auth'
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+if (!process.env.NEXT_PUBLIC_API_URL) {
+  throw new Error('NEXT_PUBLIC_API_URL environment variable is not set');
+}
+
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const api = axios.create({
   baseURL: BASE_URL,
