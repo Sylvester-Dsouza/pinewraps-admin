@@ -271,19 +271,24 @@ export default function ProductForm({
   const removeImage = (id: string) => {
     console.log('Removing image with id:', id);
 
-    // Simply remove the image from both state arrays
+    // Find the image in the initial data if it exists
+    const existingImage = initialData?.images?.find(img => img.id === id);
+
+    // If it's an existing image from the database, mark it for deletion
+    if (existingImage) {
+      console.log('Marking existing image for deletion:', existingImage);
+      const currentDeletedImages = form.getValues('deletedImages') || [];
+      form.setValue('deletedImages', [...currentDeletedImages, existingImage.id]);
+    }
+
+    // Remove from preview URLs
     setPreviewUrls(prev => prev.filter(img => img.id !== id));
+
+    // Remove from new images array if it's a new image
     setImages(prev => {
       const indexToRemove = previewUrls.findIndex(img => img.id === id);
       return prev.filter((_, index) => index !== indexToRemove);
     });
-
-    // If it's an existing image, mark it for deletion
-    const imageToRemove = previewUrls.find(img => img.id === id);
-    if (imageToRemove?.url.startsWith('http')) {
-      const currentDeletedImages = form.getValues('deletedImages') || [];
-      form.setValue('deletedImages', [...currentDeletedImages, id]);
-    }
   };
 
   const handleReorderImages = (newOrder: Array<{ id: string; url: string }>) => {
@@ -438,7 +443,12 @@ export default function ProductForm({
       // Add variant combinations
       formData.append('combinations', JSON.stringify(variantCombinations));
 
-      // Handle images
+      // Add deleted images array
+      const deletedImages = form.getValues('deletedImages') || [];
+      console.log('Sending deletedImages:', deletedImages);
+      formData.append('deletedImages', JSON.stringify(deletedImages));
+
+      // Handle new images
       if (images.length > 0) {
         for (const image of images) {
           formData.append('images', image);
@@ -644,26 +654,26 @@ export default function ProductForm({
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel className="text-gray-700 font-medium">Category</FormLabel>
-                          <Select
-                            onValueChange={field.onChange}
-                            value={field.value}
-                          >
-                            <FormControl>
+                          <FormControl>
+                            <Select
+                              onValueChange={field.onChange}
+                              value={field.value}
+                            >
                               <SelectTrigger>
                                 <SelectValue placeholder="Select a category" />
                               </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {categories.map((category) => (
-                                <SelectItem 
-                                  key={category.id} 
-                                  value={category.id}
-                                >
-                                  {category.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                              <SelectContent>
+                                {categories.map((category) => (
+                                  <SelectItem 
+                                    key={category.id} 
+                                    value={category.id}
+                                  >
+                                    {category.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -675,20 +685,20 @@ export default function ProductForm({
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel className="text-gray-700 font-medium">Status</FormLabel>
-                          <Select
-                            value={field.value}
-                            onValueChange={field.onChange}
-                          >
-                            <FormControl>
+                          <FormControl>
+                            <Select
+                              value={field.value}
+                              onValueChange={field.onChange}
+                            >
                               <SelectTrigger>
                                 <SelectValue placeholder="Select a status" />
                               </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="DRAFT">Draft</SelectItem>
-                              <SelectItem value="ACTIVE">Active</SelectItem>
-                            </SelectContent>
-                          </Select>
+                              <SelectContent>
+                                <SelectItem value="DRAFT">Draft</SelectItem>
+                                <SelectItem value="ACTIVE">Active</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}

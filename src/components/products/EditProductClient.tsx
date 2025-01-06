@@ -209,22 +209,27 @@ export default function EditProductClient({ productId }: EditProductClientProps)
         } else if (jsonFields.includes(key)) {
           try {
             const parsedValue = JSON.parse(value as string);
-            // Only include non-empty arrays
-            if (Array.isArray(parsedValue) && parsedValue.length > 0) {
-              if (key === 'combinations') {
-                // Ensure each combination has the required fields
-                formObject[key] = parsedValue.map(combo => ({
-                  size: combo.size || '',
-                  flavour: combo.flavour || '',
-                  price: parseFloat(combo.price) || 0
-                }));
-              } else {
+            // Always include arrays, even if empty
+            if (key === 'combinations') {
+              // Ensure each combination has the required fields
+              formObject[key] = parsedValue.map(combo => ({
+                size: combo.size || '',
+                flavour: combo.flavour || '',
+                price: parseFloat(combo.price) || 0
+              }));
+            } else if (key === 'deletedImages') {
+              // Always include deletedImages array
+              formObject[key] = parsedValue;
+              console.log('Sending deletedImages:', parsedValue);
+            } else {
+              // For other arrays, only include if non-empty
+              if (Array.isArray(parsedValue) && parsedValue.length > 0) {
                 formObject[key] = parsedValue;
               }
             }
           } catch (e) {
             console.error(`Error parsing ${key}:`, e);
-            if (key === 'combinations') {
+            if (key === 'combinations' || key === 'deletedImages') {
               formObject[key] = []; // Default to empty array if parsing fails
             }
           }
@@ -238,6 +243,7 @@ export default function EditProductClient({ productId }: EditProductClientProps)
             }
           } catch (e) {
             console.error('Error parsing existingImages:', e);
+            formObject[key] = [];
           }
         } else {
           formObject[key] = value;
