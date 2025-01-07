@@ -30,6 +30,7 @@ import { ClipboardEdit, ImagePlus, DollarSign, Tag, Layers, Grid, Plus, Loader2,
 import Image from 'next/image';
 import DraggableImageGrid from './DraggableImageGrid';
 import { nanoid } from 'nanoid/non-secure';
+import { RichTextEditor } from '@/components/ui/rich-text-editor';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
@@ -574,15 +575,10 @@ export default function ProductForm({
                       <FormItem>
                         <FormLabel className="text-gray-700 font-medium">Description</FormLabel>
                         <FormControl>
-                          <Textarea
-                            {...field}
-                            value={field.value || ''}
-                            onChange={(e) => {
-                              field.onChange(e);
-                              console.log('Description changed:', e.target.value);
-                            }}
+                          <RichTextEditor
+                            content={field.value || ''}
+                            onChange={field.onChange}
                             placeholder="Enter product description"
-                            className="min-h-[100px]"
                           />
                         </FormControl>
                         <FormMessage />
