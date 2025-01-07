@@ -13,7 +13,10 @@ import {
   Image as ImageIcon,
   Undo,
   Redo,
+  ChevronDown,
+  Type,
 } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './dropdown-menu';
 
 interface RichTextEditorProps {
   content: string;
@@ -66,6 +69,14 @@ export function RichTextEditor({ content, onChange, placeholder }: RichTextEdito
     }
   };
 
+  const headingLevels = [
+    { level: 2, label: 'Heading 2' },
+    { level: 3, label: 'Heading 3 (Accordion)' },
+    { level: 4, label: 'Heading 4' },
+    { level: 5, label: 'Heading 5' },
+    { level: 6, label: 'Heading 6' },
+  ];
+
   return (
     <div className="border rounded-lg">
       <div className="flex flex-wrap gap-2 p-2 border-b bg-gray-50">
@@ -87,15 +98,36 @@ export function RichTextEditor({ content, onChange, placeholder }: RichTextEdito
         >
           <Italic className="h-4 w-4" />
         </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-          className={editor.isActive('heading', { level: 2 }) ? 'bg-gray-200' : ''}
-        >
-          <Heading2 className="h-4 w-4" />
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="gap-1"
+            >
+              <Type className="h-4 w-4" />
+              <ChevronDown className="h-3 w-3" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            <DropdownMenuItem
+              onClick={() => editor.chain().focus().setParagraph().run()}
+              className={editor.isActive('paragraph') ? 'bg-accent' : ''}
+            >
+              Paragraph
+            </DropdownMenuItem>
+            {headingLevels.map((heading) => (
+              <DropdownMenuItem
+                key={heading.level}
+                onClick={() => editor.chain().focus().toggleHeading({ level: heading.level }).run()}
+                className={editor.isActive('heading', { level: heading.level }) ? 'bg-accent' : ''}
+              >
+                {heading.label}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
         <Button
           type="button"
           variant="ghost"
