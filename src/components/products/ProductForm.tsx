@@ -5,9 +5,10 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { toast } from 'react-hot-toast';
-import { Category } from '@/types/category';
-import { Product, VariationType } from '@/types/product';
-import { Button } from '@/components/ui/button';
+import { nanoid } from 'nanoid/non-secure';
+import { ImagePlus, ClipboardEdit, DollarSign, Tag, Layers, Grid, Plus, Loader2, Trash2 } from 'lucide-react';
+import Image from 'next/image';
+
 import {
   Form,
   FormControl,
@@ -15,22 +16,32 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+} from "@/components/ui/form";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { ClipboardEdit, ImagePlus, DollarSign, Tag, Layers, Grid, Plus, Loader2, Trash2 } from 'lucide-react';
-import Image from 'next/image';
-import DraggableImageGrid from './DraggableImageGrid';
-import { nanoid } from 'nanoid/non-secure';
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { Separator } from "@/components/ui/separator";
 import { RichTextEditor } from '@/components/ui/rich-text-editor';
+import DraggableImageGrid from './DraggableImageGrid';
+
+import { Category } from '@/types/category';
+import { Product, VariationType } from '@/types/product';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
@@ -74,7 +85,11 @@ const productFormSchema = z.object({
     size: z.string(),
     flavour: z.string(),
     price: z.number()
-  })).optional()
+  })).optional(),
+  // Basic SEO Fields
+  metaTitle: z.string().max(60, 'Meta title must be less than 60 characters').optional(),
+  metaDescription: z.string().max(160, 'Meta description must be less than 160 characters').optional(),
+  metaKeywords: z.string().optional(),
 });
 
 type ProductFormValues = z.infer<typeof productFormSchema>;
@@ -123,7 +138,11 @@ export default function ProductForm({
       variations: initialData?.variations || [],
       existingImages: initialData?.images || [],
       deletedImages: [],
-      combinations: initialData?.combinations || []
+      combinations: initialData?.combinations || [],
+      // Basic SEO Fields
+      metaTitle: initialData?.metaTitle || '',
+      metaDescription: initialData?.metaDescription || '',
+      metaKeywords: initialData?.metaKeywords || '',
     }
   });
 
@@ -206,7 +225,11 @@ export default function ProductForm({
         variations: initialData.variations || [],
         existingImages: initialData.images || [],
         deletedImages: [],
-        combinations: initialData.combinations || []
+        combinations: initialData.combinations || [],
+        // Basic SEO Fields
+        metaTitle: initialData.metaTitle || '',
+        metaDescription: initialData.metaDescription || '',
+        metaKeywords: initialData.metaKeywords || '',
       });
     }
   }, [form, initialData]);
@@ -460,6 +483,11 @@ export default function ProductForm({
       if (previewUrls.length > 0) {
         formData.append('existingImages', JSON.stringify(previewUrls));
       }
+
+      // Add SEO fields
+      formData.append('metaTitle', data.metaTitle || '');
+      formData.append('metaDescription', data.metaDescription || '');
+      formData.append('metaKeywords', data.metaKeywords || '');
 
       await onSubmit(formData);
     } catch (error) {
@@ -915,10 +943,7 @@ export default function ProductForm({
             {/* Media */}
             <Card className="border-none shadow-md">
               <CardHeader className="border-b bg-gray-50/50 rounded-t-lg">
-                <div className="flex items-center space-x-2">
-                  <ImagePlus className="h-5 w-5 text-gray-500" />
-                  <CardTitle className="text-xl font-semibold text-gray-700">Media</CardTitle>
-                </div>
+                <CardTitle>Media</CardTitle>
               </CardHeader>
               <CardContent className="pt-6">
                 <DraggableImageGrid
@@ -946,6 +971,81 @@ export default function ProductForm({
                   Upload up to 5 images. Max file size: 5MB. Supported formats: JPEG, PNG, WebP.
                   Drag images to reorder them.
                 </p>
+              </CardContent>
+            </Card>
+
+            {/* SEO Section */}
+            <Card className="mt-6">
+              <CardHeader>
+                <CardTitle>SEO Settings</CardTitle>
+                <CardDescription>
+                  Optimize your product for search engines. Other SEO elements will be handled automatically.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="metaTitle"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Meta Title</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Input 
+                            placeholder="Enter meta title (max 60 characters)" 
+                            {...field} 
+                            maxLength={60}
+                          />
+                          <span className="absolute right-2 top-2 text-sm text-gray-400">
+                            {field.value?.length || 0}/60
+                          </span>
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="metaDescription"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Meta Description</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Textarea 
+                            placeholder="Enter meta description (max 160 characters)" 
+                            {...field} 
+                            maxLength={160}
+                            className="min-h-[100px]"
+                          />
+                          <span className="absolute right-2 bottom-2 text-sm text-gray-400">
+                            {field.value?.length || 0}/160
+                          </span>
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="metaKeywords"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Meta Keywords</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="Enter keywords separated by commas" 
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </CardContent>
             </Card>
           </div>

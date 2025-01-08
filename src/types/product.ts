@@ -53,6 +53,10 @@ export interface Product {
   variations?: ProductVariant[];
   variantCombinations?: VariantCombination[];
   specifications?: Record<string, string>;
+  tags?: string[];
+  metaTitle?: string;
+  metaDescription?: string;
+  metaKeywords?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }

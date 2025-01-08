@@ -29,7 +29,11 @@ const updateSchema = z.object({
   existingImages: z.array(z.string()).optional(),
   deletedImages: z.array(z.string()).optional(),
   specifications: z.record(z.string()).optional(),
-  tags: z.array(z.string()).optional()
+  tags: z.array(z.string()).optional(),
+  // Add SEO fields to the schema
+  metaTitle: z.string().max(60).optional(),
+  metaDescription: z.string().max(160).optional(),
+  metaKeywords: z.string().optional(),
 }).strict();
 
 export async function OPTIONS() {

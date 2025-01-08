@@ -53,7 +53,7 @@ export default function CategoriesPage() {
         throw new Error('Not authenticated');
       }
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/categories`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/categories/all`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -64,12 +64,9 @@ export default function CategoriesPage() {
       }
       
       const data = await response.json();
-      console.log('API Response:', data); // Debug log
-
-      // Check the structure of the response and extract categories array
-      const categoriesArray = Array.isArray(data) ? data : 
-                            data.categories && Array.isArray(data.categories) ? data.categories :
-                            [];
+      
+      // Extract categories from the response
+      const categoriesArray = data.success ? data.data : [];
       
       setCategories(categoriesArray);
     } catch (error) {
@@ -140,7 +137,7 @@ export default function CategoriesPage() {
       <Separator className="my-4" />
       
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {Array.isArray(categories) && categories.map((category) => (
+        {categories.map((category) => (
           <Card key={category.id} className="hover:shadow-lg transition-shadow duration-200">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <div>
@@ -150,6 +147,9 @@ export default function CategoriesPage() {
                     Parent: {category.parent.name}
                   </p>
                 )}
+                <p className="text-sm text-muted-foreground">
+                  Slug: {category.slug}
+                </p>
               </div>
               <div className="flex gap-2">
                 <Button
@@ -201,7 +201,7 @@ export default function CategoriesPage() {
         ))}
       </div>
       
-      {Array.isArray(categories) && categories.length === 0 && (
+      {categories.length === 0 && (
         <div className="text-center py-10">
           <p className="text-muted-foreground">No categories found</p>
         </div>
