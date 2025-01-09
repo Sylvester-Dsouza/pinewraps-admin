@@ -17,40 +17,19 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { format, parseISO } from 'date-fns';
-import { orderService, type Order } from '@/services/order.service';
+import { orderService, type Order, type OrderStatus, type OrderItem } from '@/services/order.service';
 import { useRouter } from 'next/navigation';
-
-interface OrderItem {
-  id?: string;
-  name: string;
-  variant: string;
-  price: number;
-  quantity: number;
-  cakeWriting?: string;
-  product?: {
-    id: string;
-    images?: string[];
-    sku?: string;
-  };
-}
-
-export type OrderStatus = 
-  | 'PENDING'
-  | 'PROCESSING'
-  | 'READY_FOR_PICKUP'
-  | 'OUT_FOR_DELIVERY'
-  | 'DELIVERED'
-  | 'CANCELLED'
-  | 'COMPLETED'
-  | 'REFUNDED';
 
 export default function OrderDetailsPage() {
   const params = useParams();
   const [order, setOrder] = useState<Order | null>(null);
   const [orderSnapshot, setOrderSnapshot] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedStatus, setSelectedStatus] = useState<OrderStatus>('PENDING');
+  const [selectedStatus, setSelectedStatus] = useState<string>(order?.status || 'PENDING');
+  const [selectedPaymentStatus, setSelectedPaymentStatus] = useState('');
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [isUpdatingPaymentStatus, setIsUpdatingPaymentStatus] = useState(false);
+  const [isSendingPaymentLink, setIsSendingPaymentLink] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
 
@@ -66,7 +45,8 @@ export default function OrderDetailsPage() {
       if (orderResponse) {
         console.log('Order Response:', JSON.stringify(orderResponse, null, 2)); // Debug log
         setOrder(orderResponse);
-        setSelectedStatus(orderResponse.status as OrderStatus);
+        setSelectedStatus(orderResponse.status as string);
+        setSelectedPaymentStatus(orderResponse.payment?.status || '');
       }
 
       try {
@@ -141,28 +121,32 @@ export default function OrderDetailsPage() {
     ).join(' ');
   };
 
-  const getPaymentStatusColor = (status: string | undefined) => {
-    if (!status) return 'bg-gray-100 text-gray-800';
-    
-    const colors: Record<string, string> = {
-      pending: 'bg-yellow-100 text-yellow-800',
-      authorized: 'bg-blue-100 text-blue-800',
-      captured: 'bg-green-100 text-green-800',
-      failed: 'bg-red-100 text-red-800',
-      cancelled: 'bg-gray-100 text-gray-800',
-      refunded: 'bg-purple-100 text-purple-800',
-    };
-    return colors[status.toLowerCase()] || 'bg-gray-100 text-gray-800';
+  const getPaymentStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'authorized':
+        return 'bg-blue-100 text-blue-800';
+      case 'captured':
+        return 'bg-green-100 text-green-800';
+      case 'failed':
+        return 'bg-red-100 text-red-800';
+      case 'cancelled':
+        return 'bg-gray-100 text-gray-800';
+      case 'refunded':
+        return 'bg-purple-100 text-purple-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
   };
 
-  const formatDate = (dateString: string | Date | null) => {
-    if (!dateString) return 'N/A';
+  const formatDate = (date: string | undefined | null) => {
+    if (!date) return '';
     try {
-      const date = typeof dateString === 'string' ? parseISO(dateString) : dateString;
-      return format(date, 'MMM d, yyyy h:mm a');
+      return format(parseISO(date), 'PPp');
     } catch (error) {
       console.error('Error formatting date:', error);
-      return 'Invalid date';
+      return date;
     }
   };
 
@@ -267,6 +251,10 @@ export default function OrderDetailsPage() {
     return parsedItems.reduce((total, item) => total + (item.price * item.quantity), 0);
   };
 
+  const handleStatusChange = (value: string) => {
+    setSelectedStatus(value as OrderStatus);
+  };
+
   const updateOrderStatus = async (newStatus: string) => {
     try {
       setIsUpdatingStatus(true);
@@ -274,7 +262,7 @@ export default function OrderDetailsPage() {
       
       // Update the order state with the new data
       setOrder(updatedOrder);
-      setSelectedStatus(updatedOrder.status as OrderStatus);
+      setSelectedStatus(updatedOrder.status as string);
       
       toast({
         title: "Status Updated",
@@ -289,10 +277,50 @@ export default function OrderDetailsPage() {
       });
       // Reset the selected status to the current order status
       if (order) {
-        setSelectedStatus(order.status as OrderStatus);
+        setSelectedStatus(order.status as string);
       }
     } finally {
       setIsUpdatingStatus(false);
+    }
+  };
+
+  const handleSendPaymentLink = async () => {
+    try {
+      setIsSendingPaymentLink(true);
+      await orderService.sendPaymentLink(params.orderId as string);
+      toast({
+        title: "Success",
+        description: "Payment link sent to customer",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send payment link",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSendingPaymentLink(false);
+    }
+  };
+
+  const handlePaymentStatusChange = async (newStatus: string) => {
+    try {
+      setIsUpdatingPaymentStatus(true);
+      await orderService.updatePaymentStatus(params.orderId as string, newStatus);
+      setSelectedPaymentStatus(newStatus);
+      await fetchOrder(); // Refresh order data
+      toast({
+        title: "Success",
+        description: "Payment status updated successfully",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update payment status",
+        variant: "destructive"
+      });
+    } finally {
+      setIsUpdatingPaymentStatus(false);
     }
   };
 
@@ -345,11 +373,13 @@ export default function OrderDetailsPage() {
               <div className="flex items-center gap-2 mt-1">
                 <p className="text-sm text-gray-500">{formatDate(order.createdAt || order.date)}</p>
                 <span className="text-gray-300">•</span>
-                <Badge variant="outline" className={
-                  order?.deliveryMethod === 'PICKUP' 
+                <Badge 
+                  variant="outline" 
+                  className={order?.deliveryMethod === 'PICKUP' 
                     ? "bg-purple-50 text-purple-700 border-purple-200 text-sm"
                     : "bg-blue-50 text-blue-700 border-blue-200 text-sm"
-                }>
+                  }
+                >
                   {order?.deliveryMethod === 'PICKUP' ? 'Store Pickup' : 'Delivery'}
                 </Badge>
               </div>
@@ -359,7 +389,7 @@ export default function OrderDetailsPage() {
             <div className="flex items-center gap-4">
               <Select 
                 value={selectedStatus} 
-                onValueChange={setSelectedStatus}
+                onValueChange={handleStatusChange}
                 disabled={isUpdatingStatus}
               >
                 <SelectTrigger className="w-[180px]">
@@ -425,8 +455,8 @@ export default function OrderDetailsPage() {
                   'Update Status'
                 )}
               </Button>
+              <Button variant="outline">Print Order</Button>
             </div>
-            <Button variant="outline">Print Order</Button>
           </div>
         </div>
       </div>
@@ -439,10 +469,7 @@ export default function OrderDetailsPage() {
             {/* Order Summary Card */}
             <Card className="p-6">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-lg font-semibold flex items-center gap-2">
-                  <Package className="h-5 w-5" />
-                  Order Summary
-                </h2>
+                <h2 className="text-lg font-semibold">Order Summary</h2>
                 <Badge 
                   variant="outline" 
                   className={getStatusColor(order?.status)}
@@ -464,7 +491,7 @@ export default function OrderDetailsPage() {
                 </div>
 
                 {/* Coupon Discount */}
-                {(order.couponCode || order.couponDiscount > 0 || order.pricing?.couponDiscount > 0) && (
+                {(order.couponCode || order.pricing?.couponDiscount) && (
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600 flex items-center gap-2">
                       <Gift className="h-4 w-4" />
@@ -475,39 +502,39 @@ export default function OrderDetailsPage() {
                       )}
                     </span>
                     <span className="text-red-600">
-                      -{formatCurrency(order.couponDiscount || order.pricing?.couponDiscount || 0)}
+                      -{formatCurrency(order.pricing?.couponDiscount || 0)}
                     </span>
                   </div>
                 )}
 
                 {/* Points Redemption */}
-                {(order.pointsRedeemed > 0 || order.pricing?.pointsValue > 0) && (
+                {(order.pricing?.pointsRedeemed || order.pricing?.pointsValue) && (
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600 flex items-center gap-2">
                       <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
-                      Rewards Points ({order.pointsRedeemed || order.pricing?.pointsRedeemed} points)
+                      Rewards Points ({order.pricing?.pointsRedeemed || 0} points)
                     </span>
                     <span className="text-red-600">
-                      -{formatCurrency(order.pricing?.pointsValue || order.pointsValue || 0)}
+                      -{formatCurrency(order.pricing?.pointsValue || 0)}
                     </span>
                   </div>
                 )}
 
                 {/* Delivery Charge */}
-                {(order.delivery?.charge > 0 || order.deliveryCharge > 0) && (
+                {(order.delivery?.charge || order.pricing?.deliveryCharge) && (
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600 flex items-center gap-2">
                       <Truck className="h-4 w-4" />
                       Delivery Charge
-                      {(order.delivery?.type || order.deliveryMethod) && (
+                      {order.deliveryMethod && (
                         <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-50 text-gray-700">
-                          {order.delivery?.type || order.deliveryMethod}
+                          {order.deliveryMethod}
                         </span>
                       )}
                     </span>
-                    <span>{formatCurrency(order.delivery?.charge || order.deliveryCharge || 0)}</span>
+                    <span>{formatCurrency(order.delivery?.charge || order.pricing?.deliveryCharge || 0)}</span>
                   </div>
                 )}
 
@@ -520,16 +547,15 @@ export default function OrderDetailsPage() {
                 </div>
 
                 {/* Savings Summary */}
-                {(order.couponDiscount > 0 || order.pricing?.couponDiscount > 0 || 
-                  order.pointsValue > 0 || order.pricing?.pointsValue > 0) && (
+                {(order.pricing?.couponDiscount || order.pricing?.pointsValue) && (
                   <div className="mt-2 p-2 bg-green-50 rounded-lg">
                     <p className="text-sm text-green-700 flex items-center gap-2">
                       <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                       </svg>
                       Total Savings: {formatCurrency(
-                        (order.couponDiscount || order.pricing?.couponDiscount || 0) +
-                        (order.pointsValue || order.pricing?.pointsValue || 0)
+                        (order.pricing?.couponDiscount || 0) +
+                        (order.pricing?.pointsValue || 0)
                       )}
                     </p>
                   </div>
@@ -807,7 +833,7 @@ export default function OrderDetailsPage() {
                   <div className="flex items-start gap-3">
                     <Phone className="h-5 w-5 text-gray-500 mt-0.5" />
                     <div>
-                      <p className="text-sm font-medium">{order?.customerPhone || order?.customer?.phone || 'No phone provided'}</p>
+                      <p className="text-sm font-medium">{order.customerPhone || order?.customer?.phone || 'No phone provided'}</p>
                       <p className="text-xs text-gray-500">Phone Number</p>
                     </div>
                   </div>
@@ -849,14 +875,87 @@ export default function OrderDetailsPage() {
                       {formatPaymentMethod(order.payment?.paymentMethod || order.paymentMethod || 'N/A')}
                     </Badge>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Payment Status:</span>
-                    <Badge 
-                      variant="outline" 
-                      className={getPaymentStatusColor(order.payment?.status || order.paymentStatus)}
-                    >
-                      {(order.payment?.status || order.paymentStatus || 'PENDING').toUpperCase()}
-                    </Badge>
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center justify-between">
+                      {/* <span className="text-sm text-gray-600">Payment Status:</span> */}
+                      <div className="flex items-center gap-2">
+                        <Select 
+                          value={selectedPaymentStatus} 
+                          onValueChange={setSelectedPaymentStatus}
+                          disabled={isUpdatingPaymentStatus}
+                        >
+                          <SelectTrigger className="w-[180px]">
+                            <SelectValue>
+                              {selectedPaymentStatus && (
+                                <Badge variant="outline" className={getPaymentStatusColor(selectedPaymentStatus)}>
+                                  {selectedPaymentStatus.toUpperCase()}
+                                </Badge>
+                              )}
+                            </SelectValue>
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="pending">
+                              <Badge variant="outline" className="bg-yellow-100 text-yellow-800">
+                                Pending
+                              </Badge>
+                            </SelectItem>
+                            <SelectItem value="authorized">
+                              <Badge variant="outline" className="bg-blue-100 text-blue-800">
+                                Authorized
+                              </Badge>
+                            </SelectItem>
+                            <SelectItem value="captured">
+                              <Badge variant="outline" className="bg-green-100 text-green-800">
+                                Captured
+                              </Badge>
+                            </SelectItem>
+                            <SelectItem value="failed">
+                              <Badge variant="outline" className="bg-red-100 text-red-800">
+                                Failed
+                              </Badge>
+                            </SelectItem>
+                            <SelectItem value="cancelled">
+                              <Badge variant="outline" className="bg-gray-100 text-gray-800">
+                                Cancelled
+                              </Badge>
+                            </SelectItem>
+                            <SelectItem value="refunded">
+                              <Badge variant="outline" className="bg-purple-100 text-purple-800">
+                                Refunded
+                              </Badge>
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Button 
+                          variant="secondary"
+                          disabled={isUpdatingPaymentStatus || selectedPaymentStatus === order.payment?.status}
+                          onClick={() => handlePaymentStatusChange(selectedPaymentStatus)}
+                          size="sm"
+                        >
+                          {isUpdatingPaymentStatus ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            'Update'
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                    {order.paymentStatus === 'pending' && (
+                      <Button 
+                        variant="secondary"
+                        disabled={isSendingPaymentLink}
+                        onClick={handleSendPaymentLink}
+                        className="w-full"
+                        size="sm"
+                      >
+                        {isSendingPaymentLink ? (
+                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        ) : (
+                          <CreditCard className="h-4 w-4 mr-2" />
+                        )}
+                        Send Payment Link
+                      </Button>
+                    )}
                   </div>
                   {order.payment?.merchantOrderId && (
                     <div className="flex items-center justify-between">

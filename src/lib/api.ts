@@ -145,7 +145,9 @@ export const productsApi = {
   create: (data: FormData) => api.post('/api/products', data),
   update: (id: string, data: any) => api.put(`/api/products/${id}`, data),
   delete: (id: string) => api.delete(`/api/products/${id}`),
-  uploadImage: (data: FormData) => api.post('/api/products/upload', data)
+  uploadImage: (id: string, data: FormData) => api.post(`/api/products/${id}/media`, data),
+  reorderImages: (id: string, imageOrder: string[]) => 
+    api.post(`/api/products/${id}/media/reorder`, { imageOrder }),
 };
 
 // Users API endpoints

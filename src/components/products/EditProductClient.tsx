@@ -221,6 +221,14 @@ export default function EditProductClient({ productId }: EditProductClientProps)
               // Always include deletedImages array
               formObject[key] = parsedValue;
               console.log('Sending deletedImages:', parsedValue);
+            } else if (key === 'existingImages') {
+              // Keep full image objects with order information
+              formObject[key] = parsedValue.map((img, index) => ({
+                id: img.id,
+                url: img.url,
+                isPrimary: index === 0
+              }));
+              console.log('Sending existingImages:', formObject[key]);
             } else {
               // For other arrays, only include if non-empty
               if (Array.isArray(parsedValue) && parsedValue.length > 0) {
@@ -229,21 +237,9 @@ export default function EditProductClient({ productId }: EditProductClientProps)
             }
           } catch (e) {
             console.error(`Error parsing ${key}:`, e);
-            if (key === 'combinations' || key === 'deletedImages') {
+            if (key === 'combinations' || key === 'deletedImages' || key === 'existingImages') {
               formObject[key] = []; // Default to empty array if parsing fails
             }
-          }
-        } else if (key === 'existingImages') {
-          try {
-            const images = JSON.parse(value as string);
-            if (Array.isArray(images)) {
-              // Convert image objects to URLs and combine with new image URLs
-              const existingUrls = images.map(img => img.url);
-              formObject[key] = [...existingUrls, ...newImageUrls];
-            }
-          } catch (e) {
-            console.error('Error parsing existingImages:', e);
-            formObject[key] = [];
           }
         } else {
           formObject[key] = value;
@@ -284,13 +280,17 @@ export default function EditProductClient({ productId }: EditProductClientProps)
 
       const data = await response.json();
       
+      // Update the product state with the new data
+      if (data.data) {
+        setProduct(data.data);
+      }
+      
       toast({
         title: "Product updated!",
         description: "Your changes have been saved successfully.",
       });
 
-      // Instead of redirecting, refresh the data
-      await fetchData();
+      // No need to fetch data again since we have the updated product
       router.refresh(); // This refreshes the Next.js cache
     } catch (error) {
       console.error('Error details:', error);

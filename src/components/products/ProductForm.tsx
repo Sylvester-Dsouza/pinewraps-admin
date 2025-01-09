@@ -8,6 +8,7 @@ import { toast } from 'react-hot-toast';
 import { nanoid } from 'nanoid/non-secure';
 import { ImagePlus, ClipboardEdit, DollarSign, Tag, Layers, Grid, Plus, Loader2, Trash2 } from 'lucide-react';
 import Image from 'next/image';
+import { productsApi } from '@/lib/api';
 
 import {
   Form,
@@ -315,15 +316,20 @@ export default function ProductForm({
     });
   };
 
-  const handleReorderImages = (newOrder: Array<{ id: string; url: string }>) => {
-    // Reorder the images array to match the new preview order
-    const newImages = newOrder.map(item => {
-      const oldIndex = previewUrls.findIndex(img => img.id === item.id);
-      return images[oldIndex];
-    });
+  const handleReorderImages = async (newOrder: Array<{ id: string; url: string }>) => {
+    try {
+      // Update local state first
+      setPreviewUrls(newOrder);
 
-    setImages(newImages);
-    setPreviewUrls(newOrder);
+      // Only make the API call if we have a product ID
+      if (initialData?.id) {
+        // Update form state with the new order
+        form.setValue('existingImages', newOrder);
+      }
+    } catch (error) {
+      console.error('Error reordering images:', error);
+      toast.error('Failed to reorder images');
+    }
   };
 
   const addVariantOption = (type: VariationType) => {
@@ -479,9 +485,26 @@ export default function ProductForm({
         }
       }
 
-      // Handle existing images
+      // Handle existing images with their order
       if (previewUrls.length > 0) {
-        formData.append('existingImages', JSON.stringify(previewUrls));
+        console.log('Current previewUrls:', previewUrls);
+        console.log('Initial images:', initialData?.images);
+        
+        // Filter to get only existing images (not newly uploaded ones)
+        const existingImages = previewUrls
+          .filter(img => {
+            const isExisting = initialData?.images?.some(existing => existing.id === img.id);
+            console.log(`Image ${img.id} exists in initial data: ${isExisting}`);
+            return isExisting;
+          })
+          .map((img, index) => ({
+            id: img.id,
+            url: img.url,
+            isPrimary: index === 0 // First image is primary
+          }));
+        
+        console.log('Sending existingImages:', existingImages);
+        formData.append('existingImages', JSON.stringify(existingImages));
       }
 
       // Add SEO fields

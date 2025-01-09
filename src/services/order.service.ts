@@ -1,40 +1,108 @@
 import api from '@/lib/api';
 
+export type OrderStatus = 
+  | 'PENDING'
+  | 'PROCESSING'
+  | 'READY_FOR_PICKUP'
+  | 'OUT_FOR_DELIVERY'
+  | 'DELIVERED'
+  | 'CANCELLED'
+  | 'COMPLETED'
+  | 'REFUNDED';
+
+export interface OrderItem {
+  id?: string;
+  name: string;
+  variant: string;
+  price: number;
+  quantity: number;
+  cakeWriting?: string;
+  product?: {
+    id: string;
+    images?: string[];
+    sku?: string;
+  };
+}
+
 export interface Order {
+  paymentMethod: string | undefined;
   id: string;
   orderNumber: string;
   customerName: string;
+  customerEmail: string;
   customerPhone: string;
-  status: string;
-  paymentStatus: string;
-  paymentMethod: string;
+  status: OrderStatus;
   total: number;
-  items: Array<{
-    id?: string;
-    name: string;
-    variant: string;
-    price: number;
-    quantity: number;
-    cakeWriting?: string;
-  }>;
+  items: OrderItem[];
+  createdAt: string;
+  updatedAt: string;
   date: string;
-  isGift?: boolean;
-  giftWrapCharge?: number;
-  delivery?: {
-    type: 'delivery' | 'pickup';
-    requestedDate: string;
-    requestedTime: string;
-    instructions?: string;
-    storeLocation?: string;
-  };
+  deliveryMethod: 'PICKUP' | 'DELIVERY';
+  pickupDate?: string;
+  pickupTimeSlot?: string;
+  storeLocation?: string;
+  deliveryDate?: string;
+  deliveryTimeSlot?: string;
   deliveryFee?: number;
+  streetAddress?: string;
+  apartment?: string;
+  building?: string;
+  floor?: string;
+  area?: string;
+  landmark?: string;
+  city?: string;
+  emirate?: string;
+  country?: string;
+  pincode?: string;
+  coordinates?: {
+    lat: number;
+    lng: number;
+  };
+  deliveryInstructions?: string;
+  adminNotes?: string;
+  isGift?: boolean;
+  giftMessage?: string;
+  giftNote?: string;
+  giftRecipientName?: string;
+  giftRecipientPhone?: string;
+  giftWrapCharge?: number;
+  payment?: {
+    status: string;
+    method?: string;
+    paymentMethod?: string;
+    paymentStatus?: string;
+    paymentOrderId?: string;
+    merchantOrderId?: string;
+    errorMessage?: string;
+    gatewayResponse?: any;
+    updatedAt?: string;
+  };
+  pricing: {
+    subtotal: number;
+    total: number;
+    discount?: number;
+    deliveryCharge?: number;
+    pointsValue?: number;
+    couponDiscount?: number;
+    pointsRedeemed?: number;
+  };
+  couponCode?: string;
   couponDiscount?: number;
-  rewardsUsed?: number;
-  customer: {
+  pointsRedeemed?: number;
+  pointsValue?: number;
+  delivery?: {
+    status: string;
+    type?: string;
+    charge?: number;
+    deliveryCharge?: number;
+  };
+  customer?: {
     id: number;
     name: string;
     email: string;
     phone: string;
+    firstName?: string;
+    lastName?: string;
     address?: {
       street: string;
       apartment?: string;
@@ -52,7 +120,6 @@ export interface Order {
       };
     };
   };
-  adminNotes?: string;
 }
 
 export interface OrdersResponse {
@@ -180,5 +247,27 @@ export const orderService = {
       console.error('Error deleting order:', error);
       throw new Error(error.response?.data?.message || 'Failed to delete order');
     }
-  }
+  },
+
+  // Send payment link to customer
+  sendPaymentLink: async (orderId: string) => {
+    try {
+      const response = await api.post(`/api/orders/${orderId}/payment-link`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error sending payment link:', error);
+      throw new Error(error.response?.data?.message || 'Failed to send payment link');
+    }
+  },
+
+  // Update payment status
+  updatePaymentStatus: async (orderId: string, paymentStatus: string) => {
+    try {
+      const response = await api.patch(`/api/orders/${orderId}/payment-status`, { paymentStatus });
+      return response.data;
+    } catch (error: any) {
+      console.error('Error updating payment status:', error);
+      throw new Error(error.response?.data?.message || 'Failed to update payment status');
+    }
+  },
 };
